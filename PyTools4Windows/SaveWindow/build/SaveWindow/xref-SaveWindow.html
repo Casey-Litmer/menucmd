@@ -15,7 +15,7 @@
 
 <div class="node">
   <a name="SaveWindow.py"></a>
-  <a target="code" href="///C:/Users/litme/PycharmProjects/PyTools4Windows/venv/SaveWindow.py" type="text/plain"><tt>SaveWindow.py</tt></a>
+  <a target="code" href="///C:/Users/litme/PycharmProjects/PyTools4Windows/PyTools4Windows/SaveWindow.py" type="text/plain"><tt>SaveWindow.py</tt></a>
 <span class="moduletype">Script</span>  <div class="import">
 imports:
     <a href="#MenuCMD">MenuCMD</a>
@@ -153,10 +153,11 @@ imports:
  &#8226;   <a href="#genericpath">genericpath</a>
  &#8226;   <a href="#heapq">heapq</a>
  &#8226;   <a href="#io">io</a>
- &#8226;   <a href="#json">json</a>
  &#8226;   <a href="#keyword">keyword</a>
  &#8226;   <a href="#linecache">linecache</a>
  &#8226;   <a href="#locale">locale</a>
+ &#8226;   <a href="#macrolib.jsonmacros">macrolib.jsonmacros</a>
+ &#8226;   <a href="#macrolib.typemacros">macrolib.typemacros</a>
  &#8226;   <a href="#ntpath">ntpath</a>
  &#8226;   <a href="#operator">operator</a>
  &#8226;   <a href="#os">os</a>
@@ -172,10 +173,12 @@ imports:
  &#8226;   <a href="#sre_constants">sre_constants</a>
  &#8226;   <a href="#sre_parse">sre_parse</a>
  &#8226;   <a href="#stat">stat</a>
+ &#8226;   <a href="#subprocess">subprocess</a>
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#warnings">warnings</a>
  &#8226;   <a href="#weakref">weakref</a>
+ &#8226;   <a href="#winreg">winreg</a>
 
   </div>
 
@@ -201,8 +204,13 @@ imported by:
 
 <div class="node">
   <a name="MenuCMD"></a>
-  <a target="code" href="///C:/Users/litme/PycharmProjects/PyTools4Windows/venv/MenuCMD.py" type="text/plain"><tt>MenuCMD</tt></a>
+  <a target="code" href="///C:/Users/litme/PycharmProjects/PyTools4Windows/PyTools4Windows/MenuCMD.py" type="text/plain"><tt>MenuCMD</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#macrolib.typemacros">macrolib.typemacros</a>
+
+  </div>
+  <div class="import">
 imported by:
     <a href="#SaveWindow.py">SaveWindow.py</a>
 
@@ -5585,10 +5593,10 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#SaveWindow.py">SaveWindow.py</a>
- &#8226;   <a href="#json.decoder">json.decoder</a>
+    <a href="#json.decoder">json.decoder</a>
  &#8226;   <a href="#json.encoder">json.encoder</a>
  &#8226;   <a href="#json.scanner">json.scanner</a>
+ &#8226;   <a href="#macrolib.jsonmacros">macrolib.jsonmacros</a>
 
   </div>
 
@@ -5764,6 +5772,53 @@ imported by:
     <a href="#shutil">shutil</a>
  &#8226;   <a href="#tarfile">tarfile</a>
  &#8226;   <a href="#zipfile">zipfile</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="macrolib"></a>
+  <a target="code" href="///C:/Users/litme/PycharmProjects/PyTools4Windows/PyTools4Windows/macrolib/__init__.py" type="text/plain"><tt>macrolib</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imported by:
+    <a href="#macrolib.jsonmacros">macrolib.jsonmacros</a>
+ &#8226;   <a href="#macrolib.typemacros">macrolib.typemacros</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="macrolib.jsonmacros"></a>
+  <a target="code" href="///C:/Users/litme/PycharmProjects/PyTools4Windows/PyTools4Windows/macrolib/jsonmacros.py" type="text/plain"><tt>macrolib.jsonmacros</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#json">json</a>
+ &#8226;   <a href="#macrolib">macrolib</a>
+ &#8226;   <a href="#os">os</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#SaveWindow.py">SaveWindow.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="macrolib.typemacros"></a>
+  <a target="code" href="///C:/Users/litme/PycharmProjects/PyTools4Windows/PyTools4Windows/macrolib/typemacros.py" type="text/plain"><tt>macrolib.typemacros</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#macrolib">macrolib</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#MenuCMD">MenuCMD</a>
+ &#8226;   <a href="#SaveWindow.py">SaveWindow.py</a>
 
   </div>
 
@@ -5966,6 +6021,7 @@ imported by:
  &#8226;   <a href="#locale">locale</a>
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#lzma">lzma</a>
+ &#8226;   <a href="#macrolib.jsonmacros">macrolib.jsonmacros</a>
  &#8226;   <a href="#ntpath">ntpath</a>
  &#8226;   <a href="#ntpath">ntpath</a>
  &#8226;   <a href="#pathlib">pathlib</a>
@@ -6697,7 +6753,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#os">os</a>
+    <a href="#SaveWindow.py">SaveWindow.py</a>
+ &#8226;   <a href="#os">os</a>
 
   </div>
 
@@ -7206,7 +7263,8 @@ imported by:
   <a name="winreg"></a>
   <tt>winreg</tt> <span class="moduletype"><i>(builtin module)</i></span>  <div class="import">
 imported by:
-    <a href="#importlib._bootstrap_external">importlib._bootstrap_external</a>
+    <a href="#SaveWindow.py">SaveWindow.py</a>
+ &#8226;   <a href="#importlib._bootstrap_external">importlib._bootstrap_external</a>
 
   </div>
 

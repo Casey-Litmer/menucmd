@@ -34,7 +34,7 @@
    'C:\\Users\\litme\\PycharmProjects\\PyTools4Windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_inspect.py',
    'PYSOURCE'),
   ('SaveWindow',
-   'C:\\Users\\litme\\PycharmProjects\\PyTools4Windows\\venv\\SaveWindow.py',
+   'C:\\Users\\litme\\PycharmProjects\\PyTools4Windows\\PyTools4Windows\\SaveWindow.py',
    'PYSOURCE')],
  'python312.dll',
  True,

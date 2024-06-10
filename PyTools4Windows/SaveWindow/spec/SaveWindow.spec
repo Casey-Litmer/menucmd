@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['..\\..\\..\\PycharmProjects\\PyTools4Windows\\venv\\SaveWindow.py'],
+    ['..\\..\\..\\PycharmProjects\\PyTools4Windows\\PyTools4Windows\\SaveWindow.py'],
     pathex=[],
     binaries=[],
     datas=[],
