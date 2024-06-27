@@ -2,7 +2,7 @@
 
 Getting Started
 
-
+-----------------------------------------------------------------------------------------------------
 1). Hello World
 
 Start by importing the Menu object. 
@@ -19,6 +19,18 @@ menu1 = Menu(name = "First Menu")
 ```
 
 You can add one or more items to a menu with the append method.  
+An item is composed of a key, a message, and a function/argument chain.
+
+```
+("key", "message", (func1, (*args1), func2, (*args2),))
+```
+
+When the user selects an item, func1 will run with args1, then func2 will run with args2
+If a function only has one argument, you can simply write the pair as (func1, arg1).
+Arg1 will automatically be wrapped as a tuple*.  
+
+*If arg1 is a tuple, write (arg1,) -otherwise its contents will be interpreted as separate arguments.
+
 
 ```
 #Add an Item
@@ -29,3 +41,34 @@ menu1.append(
 )
 
 ```
+
+Now all that's left is to run the menu.
+
+```
+from MenuCMD import Menu
+
+#Create New Menu
+menu1 = Menu(name = "First Menu")
+
+#Add an Item
+menu1.append(
+    ("x", "Hello World", (
+      print, "hello world!"
+    ))
+)
+
+menu1()
+```
+
+
+-----------------------------------------------------------------------------------------------------
+    
+
+
+
+
+
+
+
+
+
