@@ -1,0 +1,31 @@
+
+
+Getting Started
+
+
+1). Hello World
+
+Start by importing the Menu object. 
+
+```
+from MenuCMD import Menu
+```
+
+Create a new menu with a custom name.
+
+```
+#Create New Menu
+menu1 = Menu(name = "First Menu")
+```
+
+You can add one or more items to a menu with the append method.  
+
+```
+#Add an Item
+menu1.append(
+    ("x", "Hello World", (
+      print, "hello world!"
+    ))
+)
+
+```
