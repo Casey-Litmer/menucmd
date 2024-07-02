@@ -1,10 +1,7 @@
-<<<<<<< HEAD
 from MenuCMD import Menu, Item, edit_list, yesno_ver, f_escape, f_switch
 from MenuCMD import Bind as B
-=======
-from MenuCMD.lib.MenuCMD import Menu, Item, edit_list, yesno_ver, f_escape, f_switch
-from MenuCMD.lib.MenuCMD import Bind as B
->>>>>>> 55b03a50c88c99c3827644db67913f7b1860f08a
+from MenuCMD import Menu, Item, edit_list, yesno_ver, f_escape, f_switch
+from MenuCMD import Bind as B
 import numpy as np
 
 

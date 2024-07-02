@@ -1,8 +1,6 @@
-<<<<<<< HEAD
 from macrolib.typemacros import tupler, dict_union, replace_value_nested
-=======
-from MenuCMD.macrolib.typemacros import tupler, dict_union, replace_value_nested
->>>>>>> 55b03a50c88c99c3827644db67913f7b1860f08a
+from macrolib.typemacros import tupler, dict_union, replace_value_nested
+
 #from types import FunctionType
 
 #test1
