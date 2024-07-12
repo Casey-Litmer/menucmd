@@ -1,4 +1,4 @@
-from MenuCMD import Menu, Bind as B
+from lib.MenuCMD import Menu, Bind as B
 
 def main():
     #Create New Menu
