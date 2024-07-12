@@ -300,7 +300,10 @@ Use the `result` object for the argument of each consecutive function in the ite
 ```commandline
 menu1.append(
     ("n", "square a number", (
-      input, ("number "), float, (result), lambda n: n**2, (result), print, (result)
+      input, "number ", 
+      float, result, 
+      lambda n: n**2, result, 
+      print, result
     )),
 )
 ```
@@ -363,9 +366,12 @@ menu1 = Menu(name = "Function Composition")
 #Append Items
 menu1.append(
     ("n", "square a number", (
-      input, ("number "), float, (result), lambda n: n**2, (result), 
-      print, (result), print, (result[1])  
-    )),                                   #prints the second result (= result[-3])
+      input, "number: ", 
+      float, result, 
+      lambda n: n**2, result, 
+      print, result, 
+      print, result[1]  
+    )                   #result[1] prints the second result (= result[-3])
 )
 
 
@@ -418,19 +424,25 @@ menu1 = Menu(name = "Function Composition")
 #Add Items
 menu1.append(
     ("n", "square a number", (
-      input, "number ", float, result, lambda n: n**2, result, print, result
-    )),
-    ("m", "square a number (bind result)", (
-        input, "number ", lambda n: n**2, B(float, result), print, result
+        input, "number: ", 
+        float, result, 
+        lambda n: n**2, result, 
+        print, result
     )),
 
+    ("m", "square a number (bind result)", (
+        input, "number: ", 
+        lambda n: n**2, B(float, result), 
+        print, result
+    ))
 )
 
 
 #Run Menu
 menu1()
 ```
-This will effectively wait to evaluate the argument for lambda until result is known, and then converted to float.
+This will effectively wait to evaluate the argument for lambda until `result` is known, 
+and then converts it to `float`.
 
 ------
 ### Binding Functions and Kwargs
@@ -456,13 +468,77 @@ B(func, *args, **kwargs)
 -----
 ### Using kwargs
 
-*needs updating!*
+If a function also takes keyword arguments, use the `kwargs` wrapper from `Menu`. \
+`kwargs` is simply a copy of `dict`.  You may either wrap a set of keyword arguments 
+or input a dictionary:
+
+```commandline
+kwargs = Menu.kwargs
+```
+```
+menu1.append(
+    ("x", "function with kwargs", (
+        func, (*args, kwargs(kw1 = "a", kw2 = "b"))
+    ))    
+)
+```
+Or
+```
+menu1.append(
+    ("x", "function with kwargs", (
+        func, (*args, kwargs({"kw1":"a", "kw2":"b"})})
+    ))  
+)
+```
+Both will evaluate to the same.  If you do not wrap a dictionary with `kwargs`, it will be 
+interpreted as an argument.
 
 ----
 
 ### Using Manual Escapes
 
-----
+The `escape` type allows for manually breaking from a menu before a chain completes.  
+
+```commandline
+escape = Menu.escape
+```
+
+If *any* function in the chain returns `escape`, no following functions will execute and the 
+menu will instead run a different function.
+
+By default, if an `escape` object is returned, the menu will return to itself but the behaviour 
+can be changed on menu initialization:
+```commandline
+# escape_to : a function to be called on manual escape
+```
+
+For example, define a function that returns `escape` if its input is empty:
+```commandline
+def check_if_empty(x):
+    if x:
+        return x
+    else:
+        return Menu.escape
+```
+
+Then, say, if it isn't empty, print it in reverse:
+
+```commandline
+menu2.append(
+    ("x", "print if not empty", (
+        input, "Input a string ", 
+        check_if_empty, result,    #nothing will run after here if escape is returned
+        print, "reversed:", 
+        print, B(lambda s: s[::-1], result[-2])
+    ))
+)
+```
+
+While this module is designed to allow complete independence of menu structures and functions, 
+the manual escape is the one exception to the rule.  Although, in some cases, this can 
+be avoided with the builtin `escape_on` and `f_escape` functions covered in Section 5).
+
+
 
 ### Using Matching Keywords
 

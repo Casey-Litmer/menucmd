@@ -1,6 +1,5 @@
 from macrolib.typemacros import tupler, dict_union, replace_value_nested
 
-#from types import FunctionType
 
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -34,6 +33,7 @@ class Menu():
     #Kwargs Wrapper
     class kwargs(dict):
         pass
+
 
     def __init__(self,
                  name = "Choose Action",
@@ -167,19 +167,21 @@ class Bind():
 #----------------------------------------------------------------------------------------------------------------------
 #In-Line Functions
 
+def escape_on(x, value):
+    """Returns an escape if the two arguments are equal or both Truthy or both Falsy.
+    Otherwise, returns value."""
+    return Menu.escape if x == value or bool(x) == bool(value) else value
+
+
 def f_escape(*args, **kwargs) -> Menu.escape:
-    """Polymorphic in-line escape function"""   #terminal morphism in Hom(*,escape)
+    """Polymorphic in-line escape function."""   #terminal morphism in Hom(*,escape)
     return Menu.escape
 
 
 def f_switch(n: int | bool, funcs) -> Bind.Wrapper:
-    """Returns a lazy function of type (int -> function)"""
+    """Returns a lazy function of type (int | bool -> function)"""
     return Bind(lambda b: tupler(funcs)[b], n)
 
-
-#     WIP     #
-def f_method(method, *args):
-    return Bind(lambda x: method(*x), tupler(args))
 
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -202,5 +204,3 @@ def edit_list(entries: list | tuple, **kwargs) -> list | tuple:
         menu.append((str(n), str(entry), (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(kwargs)))))
 
     return menu()
-
-
