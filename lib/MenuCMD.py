@@ -168,7 +168,7 @@ class Bind():
 #In-Line Functions
 
 def escape_on(x, value):
-    """Returns an escape if the two arguments are equal or both Truthy or both Falsy.
+    """Returns an escape if the two arguments are equal, or both Truthy or both Falsy.
     Otherwise, returns value."""
     return Menu.escape if x == value or bool(x) == bool(value) else value
 
@@ -178,9 +178,9 @@ def f_escape(*args, **kwargs) -> Menu.escape:
     return Menu.escape
 
 
-def f_switch(n: int | bool, funcs) -> Bind.Wrapper:
-    """Returns a lazy function of type (int | bool -> function)"""
-    return Bind(lambda b: tupler(funcs)[b], n)
+def f_switch(n: int, funcs: tuple) -> Bind.Wrapper:
+    """Returns a lazy function of type (int -> function)"""
+    return Bind(lambda b: funcs[b], n)
 
 
 
@@ -188,7 +188,7 @@ def f_switch(n: int | bool, funcs) -> Bind.Wrapper:
 #Builtin Menus
 
 def yesno_ver(**kwargs) -> bool:
-    """Simple yes/no verification returning Bool"""
+    """Simple yes/no verification returning bool"""
     kwargs_ = {"name":"Are you sure?", "exit_to":lambda: False, "exit_message":"cancel"} | kwargs
     menu = Menu(**kwargs_)
     menu.append(("x", "yes", (lambda: True, ())))

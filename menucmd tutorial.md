@@ -4,6 +4,21 @@ Getting Started
 -
 -----------------------------------------------------------------------------------------------------
 MenuCMD is a library designed to easily create simple command line menus in a functional programming style.
+The main goal is to separate functions from the way in which they are composed and how the user navigates them.
+
+
+This module can be used in several ways:
+
+- as a debugging tool
+- as a dedicated command line application interface
+- as a framework for delayed function evaluation
+
+Separating navigation from function definitions allows the user to later repurpose a program to run automatically
+without relying on user input.  What one creates as a command line interface one day, can easily be automated
+the next.  
+
+Other features such as lazy evaluation with the `Bind` class can also be used independently from the menu 
+interface for your functional programming needs.
 
 
 1). Hello World
@@ -12,7 +27,7 @@ MenuCMD is a library designed to easily create simple command line menus in a fu
 -----
 ### Initializing a Menu
 
-Start by importing the Menu class. 
+Start by importing the `Menu` class. 
 
 ```
 from MenuCMD import Menu
@@ -27,8 +42,8 @@ menu1 = Menu(name = "First Menu")
 ```
 -------
 ### Menu Item Format
-You can add one or more items to a menu with the append method.  
-An item is a tuple composed of a key, a message, and another tuple
+You can add one or more items to a menu with the `append` method.  
+An item is a `tuple` composed of a key, a message, and another `tuple`
 containing a chain of functions and arguments. 
 
 ```
@@ -37,22 +52,23 @@ containing a chain of functions and arguments.
 
 -----
 ### Writing Arguments
-When the user selects an item, func1 will run with args1, then func2 will run with args2
-If a function only has one argument, you can simply write the pair as (func1, arg1).
-Arg1 will automatically be wrapped as a tuple*.  
+When the user selects an item, **func1** will run with **args1**, then **func2** will run with **args2**.  
 
-**If arg1 is **itself** a tuple, write (arg1,).  Otherwise its contents will be interpreted as separate arguments.*
+If a function only has one argument, you can simply write the pair as **(func1, arg1)**. \
+**arg1** will automatically be wrapped as a `tuple`.  
+
+**If **arg1** is itself a tuple, write **(arg1,)**.  Otherwise its contents will be interpreted as separate arguments!*
 
 It is generally best practice to
-keep the singleton tuple notation (x,) but is not strictly necessary.
+keep the singleton tuple notation **(x,)** but is not strictly necessary.
 
 -------
 
 To add an item that prints 'hello world!' append the following:
 ```commandline
-("x", "hello world program", (print, "hello world!"))
+("x", "hello world program", (print, "Hello World!"))
 ```
-This will display "hello world program" on the menu, and run the print function with argument "Hello World"
+This will display "hello world program" on the menu, and run the **print** function with argument "Hello World!"
 when the user inputs "x".
 
 To append item(s) to a menu:
@@ -87,6 +103,7 @@ menu1.append(
     ))
 )
 
+#Run menu
 menu1()
 ```
 
@@ -95,9 +112,8 @@ The result should look like:
 First Menu
 [x]- hello world program
 [e]- exit
-
 ```
-Inputing 'x' will print the desired text, returning to the menu
+Inputing 'x' will print the desired text, returning to the menu:
 ```commandline
 First Menu
 [x]- hello world program
@@ -120,17 +136,16 @@ When there is no more code to be run after the menu breaks, the program ends.
 -
 ----
 ### Defining Two Menus
-Menus can open other menus by running them as functions, allowing the user to navigate through a deeper menu structure.
+Menus can open other menus by running them as functions allowing the user to navigate through a deeper menu structure.
 
-First create a new menu instance in the same way as menu1:
+First create a new `Menu` instance in the same way as **menu1**:
 
 ```commandline
 #Create New Menus
 menu1 = Menu(name = "First Menu")
 menu2 = Menu(name = "Second Menu")
 ```
-
-Then, add another entry in menu1 that runs menu2 with no arguments:
+Then, add another entry to **menu1** that runs **menu2** with no arguments:
 
 ```commandline
 menu1.append(
@@ -143,7 +158,7 @@ menu1.append(
 )
 ```
 
-If we run the code and navigate to menu2, the following will happen:
+If we run the code and navigate to **menu2**, the following will happen:
 
 ```commandline
 First Menu
@@ -156,9 +171,10 @@ a
 Process finished with exit code 0
 ```
 
-We defined no entries for menu2 so it automatically exits menu2 and, subsequently, the program as menu1 has no more code to run.  
+We defined no entries for **menu2** so it automatically exits and, subsequently, the program, 
+as **menu1** has no more code to run.  
 
-*This results in the same outcome as pressing the exit key in menu2.*
+*This results in the same outcome as pressing the exit key in **menu2**.*
 
 -----------------------
 ### Exit Key Behaviour
@@ -170,20 +186,26 @@ in a menu initiliazation:
 #exit_message : the message displayed on the menu (default 'exit')
 ```
 ----
-To change the exit key behaviour to return to menu1, for example, 
-we can change the 'exit_to' tag in the definition of menu2 and the message it displays:
+To change the exit key behaviour to return to **menu1**, for example, 
+we can change the `exit_to` tag in the definition of **menu2** and the message it displays:
 
 ```commandline
 menu1 = Menu(name = "First Menu")
 menu2 = Menu(name = "Second Menu", exit_to = menu1, exit_message = "to menu1")
 ```
 
-This will call menu1 when the exit key is pressed or when menu2 is empty.
+This will call **menu1** when the exit key is pressed or when **menu2** is empty.
+
+*Additionally, you can change the `empty_message` keyword argument to change what message is displayed:*
+
+```commandline
+Menu(empty_message = "No more functions to run!")
+```
 
 ------
 ### Adding More Entries
 
-Let's add some entries to menu2:
+Let's add some entries to **menu2**:
 
 ```commandline
 from MenuCMD import Menu
@@ -214,29 +236,30 @@ menu2.append(
 #Run Menu
 menu1()
 ```
-Pressing 'b' will print 'Happy Birthday!' and return to menu2. Pressing 'c'
-will print 'Merry Christmas!' and return to menu1.  This is because the second item runs the print function 
- first, and then calls menu1. The first item, however, does not call menu1 so it returns to
-menu2 automatically.
+Pressing 'b' will print 'Happy Birthday!' and return to **menu2**. Pressing 'c'
+will print 'Merry Christmas!' and return to **menu1**.  This is because the second item runs the `print` function 
+ first, and then calls **menu1**. The first item, however, does not call **menu1** so it returns to
+**menu2** automatically.
 
 
 ---
 ### End Chain Behaviour
 
-The default behaviour of a None-type return of the function chain can be changed
-with the end_to keyword:
+The default behaviour of a `None`-type return of the function chain can be changed
+with the `end_to` keyword:
 ```commandline
 #end_to : function to be called when the last function of a chain returns None
 ```
 
 *By default, if the **last** function in a chain returns
-**None**, the current menu will open **itself** after all functions are executed.*
+`None`, the current menu will open **itself** after all functions are executed.*
 
 ----
 ### Serializing End Returns
 
-The print function always returns None, so if you want all of the items in menu2 to return to menu1, you can 
-set:  *end_to = menu1*,  and neglect chaining menu1 at the end of the entry.
+The `print` function always returns `None`, so if you want all of the items in menu2 to return to menu1, you can 
+set   
+`end_to` = **menu1**,  and neglect chaining **menu1** at the end of the entry.
 
 ```commandline
 from MenuCMD import Menu
@@ -272,7 +295,7 @@ menu1()
 ```
 
 This will not work for all functions, but for very simple menus, where the last function
-always returns None, the end_to tag is a simple way to serialize menu behaviour.
+always returns `None`, the `end_to` tag is a simple way to serialize menu behaviour.
 
 
 3). Function Composition
@@ -290,7 +313,7 @@ result = Menu.result
 menu1 = Menu(name = "Function Composition")
 ```
 
-The first function in the chain asks the user for a number, the second function converts it to float, the third function
+The first function in the chain asks the user for a number, the second function converts it to `float`, the third function
 squares it, and the last function prints it.
 
 `input -> float -> square -> print`  =>  `print(square(float(input())))`
@@ -310,7 +333,7 @@ menu1.append(
 When the user selects an item, the result of each function is stored into the `result` object and
 retrieved when calling the next function. A function may have `result` as any of its arguments as long as the chain composes types.
 
-You can also substitute `result` for functions if the previous return type is a function.
+You can also substitute `result` for functions if the previous return type is a `function`.
 
 ```
 #func1: *args1 -> function
@@ -355,7 +378,7 @@ etc...
 
 ```
 
-For example, if we also wanted to print the pre-squared float value, we can add:
+For example, if we also wanted to print the pre-squared `float` value, we can add:
 ```commandline
 #Create Menus
 result = Menu.result
@@ -392,11 +415,11 @@ Start by importing `Bind` into a convenient namespace:
 from MenuCMD import Menu, Bind as B
 ```
 
-An object of the Bind class is essentially a *callable* function/argument(s) pair of the form
+An object of the `Bind` class is essentially a *callable* function/argument(s) pair of the form
 ```commandline
 B(func, *args)
 ```
-The object takes a depth-first approach to evaluation so the deepest nested Bind object 
+The object takes a depth-first approach to evaluation so the deepest nested `Bind` object 
 will be evaluated first, and all the way up.
 
 ```commandline
@@ -405,11 +428,21 @@ B(func1, B(func2, B(func3, *args)))
 #Evaluates to:
 func1(func2(func3(*args)))
 ```
+When a menu runs its function chains, it will evaluate all nested `Bind` objects as required.
 
-By default, if you don't use Bind in a menu item, and set the internal 'args' to 'result', Python will attempt
-to evaluate func3(result) before the item is even appended to the menu.  But result *doesn't exist yet!*
+*Outside of integrated menu usage, a `Bind` object can be called with no arguments and it will return its function
+evaluated with its arguments.*
 
-A different way to appraoch the square number entry is to bind 'float' with 'result' and use it as the argument
+```commandline
+lazy_func = B(func, *args)
+
+lazy_func() -> func(*args)
+```
+
+By default, if you don't use `Bind` in a menu item, and set the internal **args** to `result`, Python will attempt
+to evaluate **func3(result)** before the item is even appended to the menu.  But **result** *doesn't exist yet!*
+
+A different way to appraoch the square number entry is to bind `float` with `result` and use it as the argument
 to the squaring function:
 
 ```commandline
@@ -447,9 +480,9 @@ and then converts it to `float`.
 ------
 ### Binding Functions and Kwargs
 
-Additionally, Bind objects can be nested in both the function and arguments. 
+Additionally, `Bind` objects can be nested in both the function and arguments. 
 
-For example, this is a completely valid Bind object:
+For example, this is a completely valid `Bind` object:
 ```commandline
 B(B(B(func1, *args1), *args2), B(func2, *args3))
 
@@ -458,7 +491,7 @@ B(B(B(func1, *args1), *args2), B(func2, *args3))
 ```
 If a **function** is undetermined, then it can also wait until the very last minute.
 
-*Furthermore, Bind works exactly the same with keyword arguments.*
+*Furthermore, `Bind` works exactly the same with keyword arguments.*
 ```commandline
 B(func, *args, **kwargs)
 ```
@@ -503,7 +536,7 @@ The `escape` type allows for manually breaking from a menu before a chain comple
 escape = Menu.escape
 ```
 
-If *any* function in the chain returns `escape`, no following functions will execute and the 
+If *any* function in the chain returns `escape`, no following functions will be executed and the 
 menu will instead run a different function.
 
 By default, if an `escape` object is returned, the menu will return to itself but the behaviour 
@@ -521,7 +554,7 @@ def check_if_empty(x):
         return Menu.escape
 ```
 
-Then, say, if it isn't empty, print it in reverse:
+Then, say, if it isn't empty, print the string in reverse:
 
 ```commandline
 menu2.append(
@@ -536,7 +569,7 @@ menu2.append(
 
 While this module is designed to allow complete independence of menu structures and functions, 
 the manual escape is the one exception to the rule.  Although, in some cases, this can 
-be avoided with the builtin `escape_on` and `f_escape` functions covered in Section 5).
+be avoided with the builtin `escape_on` and `f_escape` functions covered in *Section 5)*.
 
 
 
@@ -544,9 +577,191 @@ be avoided with the builtin `escape_on` and `f_escape` functions covered in Sect
 
 ----
 
+If a menu *exits*, *ends*, or *escapes* to the same function, you can optionally use matching
+keywords to avoid writing the arguments multiple times.
 
+For example, instead of writing
+```commandline
+menu1 = Menu()
 
+menu2 = Menu(exit_to = menu1, end_to = menu1, escape_to = menu1)
+
+menu3 = Menu(exit_to = menu2, end_to = menu1, escape_to = menu1)
+```
+
+you can use the `Menu.exit_to` and `Menu.end_to` keyword objects:
+
+```commandline
+menu1 = Menu()
+
+menu2 = Menu(exit_to = menu1, end_to = Menu.exit_to, escape_to = Menu.exit_to)
+
+menu3 = Menu(exit_to = menu2, end_to = menu1, escape_to = Menu.end_to)
+```
+
+Setting any of the keyword arguments to `Menu.exit_to` will mirror the value of `exit_to`, 
+likewise for `Menu.end_to`.
+
+The order of precedence for the `Menu.exit_to` and `Menu.end_to` objects is as follows:
+```commandline
+                           .______________.
+           ._________._____|___________.  |
+           |         V     |           V  V
+exit_to    |       end_to  |        escape_to
+   |       |         |     |
+   V       |         V     |
+Menu.exit_to     Menu.end_to
+```
+
+`exit_to` will always be defined first, `end_to` second, and lastly `escape_to`.  There is hence no 
+*Menu.escape_to* object.
+
+Matching keywords serve as a nifty way to serialize `Menu` parameters.
 
 5). Builtins
 -
 ------
+
+So far, this tutorial has approached creating menus as separate entities from the functions they compose.
+While this is an intended feature of the module, you may still use menus within functions.  MenuCMD has a number
+of builtin functions to create template menus and to make in-line composition easier.  
+
+*This list is subject to change as community members can submit their own if anyone finds any common uses or improvements for MenuCMD!* 
+
+
+## In-line Functions
+
+These functions are designed to be composed in menu item function chains to control command flow.
+
+-----
+
+### escape_on(x, value) -> value | Menu.escape
+```
+Returns an escape if the two arguments are equal, or both Truthy or both Falsy.
+Otherwise, returns value.
+```
+Use this to break function chain execution on an equality condition.  For example, to *escape* the menu on
+empty input write:
+```commandline
+(input, "input", escape_on, ("", result), print, "your input:", print, result[-2])
+```
+This will bypass the print statements if the user inputs an empty string and calls whatever `escape_to` 
+is defined as.
+
+-----
+### f_escape(*args, **kwargs) -> Menu.escape
+```
+Polymorphic in-line escape function.
+```
+This function takes any **args** and **kwargs** and returns the `escape` object.
+
+*For nerds, this can be viewed as the collection of terminal morphisms in **Hom(x, escape)***
+
+----
+### f_switch(n: int | bool, funcs: tuple[function]) -> Bind.Wrapper
+
+
+```commandline
+Returns a lazy function of type (int -> function)
+```
+Takes an `int` and a `tuple` of functions and returns a `Bind` that indexes each function.
+
+Use this if you want a previous result to change which function runs next.
+```commandline
+functions = (func1, func2, func3)
+
+(input, "choose a function (0-2) ", f_switch(result, functions), (*args))
+                                         #Call f_switch
+```
+Since `f_switch` returns a `Bind` object that subsequently returns a `function`, be sure to *call*
+it in the function slot of the chain.  Whatever function it switches to upon evaluating `result` (an integer), 
+will then be evaluated with **args**, so be sure that all of the functions in the `tuple` have the same domain!
+
+
+-----
+## Builtin Menus
+
+These functions construct temporary menus that determine their returns.  Optionally, all menu **kwargs**
+can be passed through them to change the behaviour and appearance of the menus they invoke.
+
+*Avoid changing the `exit_to` keyword argument as it will change the return type of the functions!*
+
+------
+
+### yesno_ver(**kwargs) -> bool
+
+```commandline
+Simple yes/no verification returning bool
+```
+Asks the user a yes/no question, and returns the bool of the result.
+
+```commandline
+yesno = yesno_ver()
+
+print(yesno)
+```
+ V V V V V V V 
+```commandline
+Are you sure?
+[x]- yes
+[e]- cancel
+x
+True
+```
+```commandline
+Are you sure?
+[x]- yes
+[e]- cancel
+e
+False
+```
+
+-----
+### edit_list(entries: list | tuple, **kwargs) -> list | tuple
+```commandline
+Delete items in a list/tuple; returns updated list/tuple
+```
+Takes a `list` or `tuple` and displays a menu of numbered items to delete.  Upon each selection, the menu
+will display itself again with the item removed and will only return the updated `list`/`tuple` when the
+exit key is pressed.
+
+```commandline
+L = ['a','b','c','d','e']
+
+L = edit_list(L)
+
+print(L)
+```
+ V V V V V V V 
+```commandline
+Edit List
+[0]- a
+[1]- b
+[2]- c
+[3]- d
+[4]- e
+[e]- exit
+0
+
+Edit List
+[0]- b
+[1]- c
+[2]- d
+[3]- e
+[e]- exit
+2
+
+Edit List
+[0]- b
+[1]- c
+[2]- e
+[e]- exit
+2
+
+Edit List
+[0]- b
+[1]- c
+[e]- exit
+e
+['b', 'c']
+```
