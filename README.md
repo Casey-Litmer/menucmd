@@ -21,7 +21,36 @@ interface for your functional programming needs.
 *For developers wishing to contribute to this module, a test script is included to ensure all
 features work correctly between changes.  Feel free to update it as you see fit!*
 
+---
+## Sections: 
+### 1. Hello World
+   - Initializing a Menu
+   - Menu Item Format
+   - Writing Arguments
+   - Running 'Hello World'
+### 2. Multiple Menus
+   - Defining Two Menus
+   - Exit Key Behaviour
+   - Adding More Entries
+   - End Chain Behaviour
+   - Serializing End Returns
+### 3. Function Composition
+   - Using the Result Type
+   - Using Past Results
+   - Using the Bind Class
+   - Binding Functions and Kwargs
+### 4. Other Menu Attributes
+   - Using Kwargs
+   - Using Manual Escapes
+   - Using Matching Keywords
+### 5. Builtins
+   - In-line Functions
+   - Builtin Menus
 
+
+
+
+---
 1). Hello World
 -
 
@@ -132,7 +161,7 @@ will break out of the menu by default.  (This behaviour can be changed with the 
 
 When there is no more code to be run after the menu breaks, the program ends.
 
-
+---
 2). Multiple Menus
 -
 ----
@@ -298,7 +327,7 @@ menu1()
 This will not work for all functions, but for very simple menus, where the last function
 always returns `None`, the `end_to` tag is a simple way to serialize menu behaviour.
 
-
+---
 3). Function Composition
 -
 --------
@@ -496,7 +525,7 @@ If a **function** is undetermined, then it can also wait until the very last min
 ```commandline
 B(func, *args, **kwargs)
 ```
-
+---
 4). Other Menu Attributes
 -
 -----
@@ -619,6 +648,7 @@ Menu.exit_to     Menu.end_to
 
 Matching keywords serve as a nifty way to serialize `Menu` parameters.
 
+---
 5). Builtins
 -
 ------
