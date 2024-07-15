@@ -1,7 +1,7 @@
 Getting Started
 -
 -----------------------------------------------------------------------------------------------------
-MenuCMD is a library designed to easily create simple command line menus in a functional programming style.
+menucmd is a library designed to easily create simple command line menus in a functional programming style.
 The main goal is to separate functions from the way in which they are composed and how the user navigates them.
 
 
@@ -60,7 +60,7 @@ features work correctly between changes **(requires numpy)**.  Feel free to upda
 Start by importing the `Menu` class. 
 
 ```
-from MenuCMD import Menu
+from menucmd import Menu
 ```
 
 Create a new menu with a custom name.  
@@ -121,7 +121,7 @@ menu1.append(
 Now all that's left is to run the menu by calling it with no arguments.
 
 ```
-from MenuCMD import Menu
+from menucmd import Menu
 
 #Create New Menu
 menu1 = Menu(name = "First Menu")
@@ -238,7 +238,7 @@ Menu(empty_message = "No more functions to run!")
 Let's add some entries to **menu2**:
 
 ```commandline
-from MenuCMD import Menu
+from menucmd import Menu
 
 #Create New Menu
 menu1 = Menu(name = "First Menu")
@@ -292,7 +292,7 @@ set
 `end_to` = **menu1**,  and neglect chaining **menu1** at the end of the entry.
 
 ```commandline
-from MenuCMD import Menu
+from menucmd import Menu
 
 #Create New Menu
 menu1 = Menu(name = "First Menu")
@@ -442,7 +442,7 @@ function until it needs to.
 
 Start by importing `Bind` into a convenient namespace:
 ```commandline
-from MenuCMD import Menu, Bind as B
+from menucmd import Menu, Bind as B
 ```
 
 An object of the `Bind` class is essentially a *callable* function/argument(s) pair of the form
@@ -476,7 +476,7 @@ A different way to appraoch the square number entry is to bind `float` with `res
 to the squaring function:
 
 ```commandline
-from MenuCMD import Menu, Bind as B
+from menucmd import Menu, Bind as B
 
 #Create New Menu
 result = Menu.result
@@ -654,10 +654,10 @@ Matching keywords serve as a nifty way to serialize `Menu` parameters.
 ------
 
 So far, this tutorial has approached creating menus as separate entities from the functions they compose.
-While this is an intended feature of the module, you may still use menus within functions.  MenuCMD has a number
+While this is an intended feature of the module, you may still use menus within functions.  menucmd has a number
 of builtin functions to create template menus and to make in-line composition easier.  
 
-*This list is subject to change as community members can submit their own if anyone finds any common uses or improvements for MenuCMD!* 
+*This list is subject to change as community members can submit their own if anyone finds any common uses or improvements for menucmd!* 
 
 
 ## In-line Functions
