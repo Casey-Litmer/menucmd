@@ -1,5 +1,5 @@
-from lib.MenuCMD import Menu, edit_list, yesno_ver, f_escape, f_switch
-from lib.MenuCMD import Bind as B
+from lib.menucmd import Menu, edit_list, yesno_ver, f_escape, f_switch
+from lib.menucmd import Bind as B
 import numpy as np
 
 
@@ -15,22 +15,6 @@ def main():
     main_menu.append(
         ("e", "Test Lazy Eval", (lazy_menu, (),)),
         ("b", "Test Builtins", (builtin_menu, (),)),
-        ("r", "Test code printout", (
-            get_code, (),
-            print, B("".join, B(lambda r: r[:20],result)),
-            input, (),
-            get_code, (),
-            print, B("".join, B(lambda r: r[20:40],result)),
-            input, (),
-            get_code, (),
-            print, B("".join, B(lambda r: r[40:60], result)),
-            input, (),
-            get_code, (),
-            print, B("".join, B(lambda r: r[60:80], result)),
-            input, (),
-            get_code, (),
-            print, B("".join, B(lambda r: r[80:], result)),
-        ))
     )
 #
     lazy_menu.append(
@@ -43,12 +27,6 @@ def main():
         ("c", "Cards", (
             shuffle_cards, (),
             pick_card, (B(int,B(input, "Choose Card (0-51): ")), result),
-            print, (result),
-        )),
-
-        ("v", "Cards2", (
-            shuffle_cards, (),
-            pick_card, (B(int, B(input, "Choose Card (0-51): ")), result),
             print, (result),
         )),
 
@@ -70,7 +48,7 @@ def main():
             yesno_ver, kwargs(name = "Delete system32?", exit_message = "no"),
             f_switch(result, (f_escape, yesno_ver)), kwargs(name ="Are you really sure?", exit_message = "no"),
             f_switch(result, (f_escape, yesno_ver)), kwargs(name = "Are you not sure?", exit_message = "no"),
-            f_switch(result, (yesno_ver, f_escape)), kwargs(name = "Are you sure you are not sure?", exit_message = "no"),
+            f_switch(result, (yesno_ver, f_escape)), kwargs(name = "Are you sure you are not sure?", exit_message = "wtf?"),
             print, B(lambda b: "crisis averted!" if b else "deleting...\nsystem32 cannot be deleted!", result)
         )),
     )

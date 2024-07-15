@@ -16,7 +16,6 @@ class Result():
         return isinstance(other, Result) and self.n == other.n
 
 
-
 #----------------------------------------------------------------------------------------------------------------------
 #Menu Class
 
@@ -24,7 +23,7 @@ class Menu():
     #Keyword Objects
     result = Result(-1)
     escape = object()
-    __END__ = object() #Terminal Object
+    __END__ = type("Menu.__END__", (object,), {})  #Terminal Object
 
     #Matching Keywords
     exit_to = object()  #Use as keyword for end_to to match exit_to:  Menu(end_to = Menu.exit_to)
@@ -189,7 +188,7 @@ def f_switch(n: int, funcs: tuple) -> Bind.Wrapper:
 
 def yesno_ver(**kwargs) -> bool:
     """Simple yes/no verification returning bool"""
-    kwargs_ = {"name":"Are you sure?", "exit_to":lambda: False, "exit_message":"cancel"} | kwargs
+    kwargs_ = {"name":"Are you sure?", "exit_message":"cancel"} | kwargs | {"exit_to":lambda: False}
     menu = Menu(**kwargs_)
     menu.append(("x", "yes", (lambda: True, ())))
 
@@ -198,7 +197,7 @@ def yesno_ver(**kwargs) -> bool:
 
 def edit_list(entries: list | tuple, **kwargs) -> list | tuple:
     """Delete items in a list/tuple; returns updated list/tuple"""
-    kwargs_ = {"name":"Edit List", "exit_to":lambda: entries} | kwargs
+    kwargs_ = {"name":"Edit List"} | kwargs | {"exit_to":lambda: entries}
     menu = Menu(**kwargs_)
     for n, entry in enumerate(entries):
         menu.append((str(n), str(entry), (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(kwargs)))))

@@ -19,7 +19,7 @@ Other features such as lazy evaluation with the `Bind` class can also be used in
 interface for your functional programming needs.
 
 *For developers wishing to contribute to this module, a test script is included to ensure all
-features work correctly between changes.  Feel free to update it as you see fit!*
+features work correctly between changes **(requires numpy)**.  Feel free to update it as you see fit!*
 
 ---
 ## Sections: 
