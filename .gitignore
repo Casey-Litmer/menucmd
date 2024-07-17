@@ -10,8 +10,10 @@ Git Exclude/
 
 jsonmacros.py
 
-build
+*/build
 
-dist
+*/dist
 
 *.egg-info/
+
+setup.py

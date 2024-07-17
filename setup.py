@@ -1,9 +1,10 @@
 from setuptools import setup, find_packages
 
+
 setup(
     name="menucmd",
     version="1.00.1",
-    packages=find_packages(),
+    packages=["lib", "macrolib"],
     install_requires=[
         # List your dependencies here
     ],
