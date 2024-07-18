@@ -7,8 +7,8 @@ pip install menucmd
 Getting Started
 -
 -----------------------------------------------------------------------------------------------------
-menucmd is a library designed to easily create simple command line menus in a functional programming style.
-The main goal is to separate functions from the way in which they are composed and how the user navigates them.
+MenuCMD is a library designed to easily create simple command line menus in a functional programming style.
+The main goal is to separate functions from the way in which they are composed by how the user navigates them.
 
 This module can be used in several ways:
 
@@ -16,14 +16,14 @@ This module can be used in several ways:
 - as a dedicated command line application interface
 - as a framework for delayed function evaluation
 
-Separating navigation from function definitions allows the user to later repurpose a program to run automatically
+Separating navigation from function definitions allows the user to repurpose a program to run automatically
 without relying on user input.  What one creates as a command line interface one day, can easily be automated
 the next.  
 
 Other features such as lazy evaluation with the `Bind` class can also be used independently from the menu 
 interface for your functional programming needs.
 
-*For developers wishing to contribute to this module, a test script is included to ensure all
+*For developers wishing to contribute to this module, I included a test script that ensures all
 features work correctly between changes **(requires numpy)**.  Feel free to update it as you see fit!*
 
 ---
@@ -571,13 +571,16 @@ The `escape` type allows for manually breaking from a menu before a chain comple
 escape = Menu.escape
 ```
 
-If *any* function in the chain returns `escape`, no following functions will be executed and the 
-menu will instead run a different function.
+If *any* function in the chain returns `escape`, no functions following will be executed and the 
+menu will instead run its `escape_to` attribute.
 
-By default, if an `escape` object is returned, the menu will return to itself but the behaviour 
-can be changed on menu initialization:
+By default, if a function in a chain returns `escape`, the menu will run itself. To change the
+behaviour of this, use the `escape_to` argument.
 ```commandline
 # escape_to : a function to be called on manual escape
+
+#Breaks to a different menu on escape return
+menu_B = Menu(escape_to = menu_A)
 ```
 
 For example, define a function that returns `escape` if its input is empty:
@@ -595,7 +598,7 @@ Then, say, if it isn't empty, print the string in reverse:
 menu2.append(
     ("x", "print if not empty", (
         input, "Input a string ", 
-        check_if_empty, result,    #nothing will run after here if escape is returned
+        check_if_empty, result,    #if empty return escape -> escape_to()
         print, "reversed:", 
         print, B(lambda s: s[::-1], result[-2])
     ))
@@ -612,16 +615,16 @@ be avoided with the builtin `escape_on` and `f_escape` functions covered in *Sec
 
 ----
 
-If a menu *exits*, *ends*, or *escapes* to the same function, you can optionally use matching
-keywords to avoid writing the arguments multiple times.
+If a menu's *exit_to*, *end_to*, and/or *escape_to* attributes are the same, you can optionally 
+use matching keywords to avoid writing the arguments multiple times.
 
 For example, instead of writing
 ```commandline
 menu1 = Menu()
 
-menu2 = Menu(exit_to = menu1, end_to = menu1, escape_to = menu1)
+menu2 = Menu(exit_to= menu1, end_to= menu1, escape_to= menu1)
 
-menu3 = Menu(exit_to = menu2, end_to = menu1, escape_to = menu1)
+menu3 = Menu(exit_to= menu2, end_to= menu1, escape_to= menu1)
 ```
 
 you can use the `Menu.exit_to` and `Menu.end_to` keyword objects:
@@ -629,9 +632,9 @@ you can use the `Menu.exit_to` and `Menu.end_to` keyword objects:
 ```commandline
 menu1 = Menu()
 
-menu2 = Menu(exit_to = menu1, end_to = Menu.exit_to, escape_to = Menu.exit_to)
+menu2 = Menu(exit_to= menu1, end_to= Menu.exit_to, escape_to= Menu.exit_to)
 
-menu3 = Menu(exit_to = menu2, end_to = menu1, escape_to = Menu.end_to)
+menu3 = Menu(exit_to= menu2, end_to= menu1, escape_to= Menu.end_to)
 ```
 
 Setting any of the keyword arguments to `Menu.exit_to` will mirror the value of `exit_to`, 
@@ -679,10 +682,14 @@ Otherwise, returns value.
 Use this to break function chain execution on an equality condition.  For example, to *escape* the menu on
 empty input write:
 ```commandline
-(input, "input", escape_on, ("", result), print, "your input:", print, result[-2])
+(
+input, "input", 
+escape_on, ("", result),      #if result == "" return escape -> escape_to()
+print, "your input:", 
+print, result[-2]
+)
 ```
-This will bypass the print statements if the user inputs an empty string and calls whatever `escape_to` 
-is defined as.
+This will bypass the print statements if the user inputs an empty string and the menu calls `escape_to`.
 
 -----
 ### f_escape(*args, **kwargs) -> Menu.escape
@@ -691,7 +698,9 @@ Polymorphic in-line escape function.
 ```
 This function takes any **args** and **kwargs** and returns the `escape` object.
 
-*For nerds, this can be viewed as the collection of terminal morphisms in **Hom(x, escape)***
+*For nerds, this can be viewed as a collection of terminal morphisms
+for each object in the category of types and menu item functions!*
+
 
 ----
 ### f_switch(n: int | bool, funcs: tuple[function]) -> Bind.Wrapper
@@ -706,11 +715,15 @@ Use this if you want a previous result to change which function runs next.
 ```commandline
 functions = (func1, func2, func3)
 
-(input, "choose a function (0-2) ", f_switch(result, functions), (*args))
-                                         #Call f_switch
+...
+(
+input, ("choose a function (0-2) "), 
+f_switch(result, functions), (*args)
+)
+...
 ```
-Since `f_switch` returns a `Bind` object that subsequently returns a `function`, be sure to *call*
-it in the function slot of the chain.  Whatever function it switches to upon evaluating `result` (an integer), 
+Since `f_switch` returns a `Bind` object that subsequently returns a `function`, be sure to ***call***
+it in the function slot.  Whatever function it switches to upon evaluating `result` (an integer), 
 will then be evaluated with **args**, so be sure that all of the functions in the `tuple` have the same domain!
 
 
@@ -758,8 +771,8 @@ False
 Delete items in a list/tuple; returns updated list/tuple
 ```
 Takes a `list` or `tuple` and displays a menu of numbered items to delete.  Upon each selection, the menu
-will display itself again with the item removed and will only return the updated `list`/`tuple` when the
-exit key is pressed.
+will display itself again with the item removed.  It will only return the updated `list`/`tuple` when the
+upon pressing the exit key.
 
 ```commandline
 L = ['a','b','c','d','e']
