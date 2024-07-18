@@ -1,9 +1,14 @@
+```commandline
+pip install menucmd
+```
+
+
+
 Getting Started
 -
 -----------------------------------------------------------------------------------------------------
 menucmd is a library designed to easily create simple command line menus in a functional programming style.
 The main goal is to separate functions from the way in which they are composed and how the user navigates them.
-
 
 This module can be used in several ways:
 
