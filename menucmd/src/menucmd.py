@@ -1,4 +1,4 @@
-from macrolib.typemacros import tupler, dict_union, replace_value_nested
+from .macrolib.typemacros import tupler, dict_union, replace_value_nested
 
 
 
