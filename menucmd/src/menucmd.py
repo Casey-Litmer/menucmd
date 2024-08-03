@@ -1,9 +1,9 @@
-from .macrolib.typemacros import tupler, dict_union, replace_value_nested
-
+from .macrolib.typemacros import tupler, dict_union, replace_value_nested, maybe_arg
+from copy import copy
 
 
 #----------------------------------------------------------------------------------------------------------------------
-#Result Class
+#Keyword Types
 
 class Result():
     def __init__(self, n: int):
@@ -16,13 +16,29 @@ class Result():
         return isinstance(other, Result) and self.n == other.n
 
 
+class Escape():
+    __NULL__ = object()
+    here = object()  #Tells the menu to escape with its initial argument
+
+    def __init__(self, x = __NULL__):
+        self.val = x if x is not Escape.__NULL__ else None
+    def __getitem__(self, x):
+        return Escape(x)
+    def __repr__(self):
+        return f"<class Escape[{self.val}]>"
+    def __eq__(self, other):
+        return isinstance(other, Escape) and self.val == other.val
+    #def __call__(self):
+    #    return self.x
+
+
 #----------------------------------------------------------------------------------------------------------------------
 #Menu Class
 
 class Menu():
     #Keyword Objects
     result = Result(-1)
-    escape = object()
+    escape = Escape()
     __END__ = type("Menu.__END__", (object,), {})  #Terminal Object
 
     #Matching Keywords
@@ -38,6 +54,8 @@ class Menu():
                  name = "Choose Action",
                  exit_to = lambda: Menu.__END__,
                  end_to = None,
+                 arg_to = lambda x: x,
+                 return_to = lambda x: x,
                  escape_to = None,
                  exit_key = "e",
                  exit_message = "exit",
@@ -46,6 +64,8 @@ class Menu():
         #Pass parameters
         self.name = name
         self.exit_to = exit_to
+        self.arg_to = arg_to
+        self.return_to = return_to
         self.empty_message = empty_message
 
         #Break point matching heirarchy
@@ -56,6 +76,7 @@ class Menu():
              (self.end_to if escape_to is Menu.end_to else escape_to))
 
         #Init menu data
+        self.menu_item_list = []         #de jure list of items
         self.menu_display_list = []      #["[key]- message"]
         self.menu = {}                   #{"key":(function-arg chain)}
 
@@ -64,12 +85,15 @@ class Menu():
         self.update_menu(self.exit)
 
 
-    def __call__(self):
+    #TODO
+    #compose end_to and exit_to with arg
+    def __call__(self, arg = None):
         """Runs menu and entry function chain"""
+
         #Exit On Empty Menu
         if not self.menu_display_list[:-1]:
             print(self.empty_message)
-            return self.exit_to()
+            return maybe_arg(self.exit_to)(arg)
 
         #Print Menu And Get Input
         show = f"\n{self.name}\n" + "\n".join(self.menu_display_list) + "\n"
@@ -78,14 +102,14 @@ class Menu():
         #Refresh Menu On Invalid Input
         if selection not in self.menu.keys():
             print("--*Invalid Selection*--")
-            return self()
+            return self(arg)
 
         #Select Item
         switch = self.menu[selection]
 
         #Evaluate Function Chain
-        result = None
-        results = []
+        result = maybe_arg(self.arg_to)(arg) if selection != self.exit[0] else arg
+        results = [result]    #TODO change in docs to be 1-based, 0 being from the menu call itself
         while len(switch) >= 2:
             #Get func/args pair
             func = switch[0]
@@ -105,18 +129,32 @@ class Menu():
             result = Bind.lazy_eval(func, args, kwargs)
 
             #Manual escape
-            if result is Menu.escape:
-                return self.escape_to()
+            if isinstance(result, Escape):
+                ESC = result[arg] if result.val == self.escape.here else result #TODO diversify for monad
+                return maybe_arg(self.escape_to)(ESC.val)
 
             #End Loop
             results.append(result)
             switch = switch[2:]
 
-        #Go to end_to if last result is None
-        return result if result is not None else self.end_to()
+        #Evaluate return_to if not exit key
+        result = maybe_arg(self.return_to)(result) if selection != self.exit[0] else result
+
+        #Go to end_to if final value is None
+        return result if result is not None else maybe_arg(self.end_to)(arg)
 
 
-    def append(self,*data):
+    def __getitem__(self, idx):
+        if isinstance(idx, slice):
+            new_menu = copy(self); new_menu.clear()
+            new_menu.append(*self.menu_item_list[idx])
+
+            return new_menu
+
+        return self.menu_item_list[idx]
+
+
+    def append(self, *data):
         """
         Append data to menu in the form:
         ('key', 'message', (func1, (*args1), func2, (*args2),...))
@@ -124,7 +162,30 @@ class Menu():
         """
         self.menu_display_list = self.menu_display_list[:-1]
         for n in data + (self.exit,):
+            self.menu_item_list.append(n)
             self.update_menu(n)
+
+
+    def clear(self):
+        """Clears all items from the menu"""
+        self.menu_item_list, self.menu_display_list = [], []
+        self.menu = {}
+        self.update_menu(self.exit)
+
+
+    def insert(self, n: int, *data):
+        """Insert data at position n in the form:
+        ('key', 'message', (func1, (*args1), func2, (*args2),...))"""
+        _data = self.menu_item_list[:n] + [*data] + self.menu_item_list[n:]
+        self.clear()
+        self.append(*_data)
+
+
+    def delete(self, n: int, k: int = 1):
+        """Delete k menu entries starting at position n"""
+        _data = self.menu_item_list[:n] + self.menu_item_list[n+k:]
+        self.clear()
+        self.append(*_data)
 
 
     def update_menu(self, data):
@@ -153,10 +214,10 @@ class Bind():
 
 
     @staticmethod
-    def lazy_eval(func, args, kwargs):
+    def lazy_eval(func, args = (), kwargs = {}):
         """Depth-first evaluation of nested function/argument bindings."""
         func = func() if isinstance(func, Bind.Wrapper) else func
-        args = tupler(x() if isinstance(x, Bind.Wrapper) else x for x in args)
+        args = tupler(x() if isinstance(x, Bind.Wrapper) else x for x in tupler(args))
         kwargs = {k: v() if isinstance(v, Bind.Wrapper) else v for k, v in kwargs.items()}
 
         return func(*args, **kwargs)
@@ -167,9 +228,9 @@ class Bind():
 #In-Line Functions
 
 def escape_on(x, value):
-    """Returns an escape if the two arguments are equal, or both Truthy or both Falsy.
+    """Returns an escape if the two arguments are equal.
     Otherwise, returns value."""
-    return Menu.escape if x == value or bool(x) == bool(value) else value
+    return Menu.escape[value] if x == value else value
 
 
 def f_escape(*args, **kwargs) -> Menu.escape:
@@ -203,3 +264,4 @@ def edit_list(entries: list | tuple, **kwargs) -> list | tuple:
         menu.append((str(n), str(entry), (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(kwargs)))))
 
     return menu()
+

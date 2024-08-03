@@ -1,4 +1,4 @@
-from types import GeneratorType
+from types import GeneratorType, FunctionType
 from typing import Any
 
 
@@ -135,3 +135,22 @@ def replace_value_nested(a: list | tuple | dict | set, old_vals: tuple | Any , n
     else:
         return new_val if a in old_vals else a
 
+
+
+#Fucntion Macros
+#----------------------------------------------------------------------------------------------------------------------
+
+def maybe_arg(func):
+    """
+    Passes TypeErrors for functions with no arguments.
+    Good for serializing some function signatures.
+    :param func:: *a -> b
+    :return: func:: ()|*a -> b
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except TypeError:
+            return func()
+
+    return wrapper

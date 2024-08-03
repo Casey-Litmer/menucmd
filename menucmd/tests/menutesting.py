@@ -1,6 +1,8 @@
-from menucmd import Menu, edit_list, yesno_ver, f_escape, f_switch
+from menucmd import Menu, edit_list, yesno_ver, f_escape, f_switch, escape_on
 from menucmd import Bind as B
+from notebook_test import M0
 import numpy as np
+
 
 
 def main():
@@ -10,11 +12,16 @@ def main():
     main_menu = Menu(name = "Hub", exit_key = "x")
     lazy_menu = Menu(name = "Lazy Eval", exit_to = main_menu)
     builtin_menu = Menu(name = "Builtins", exit_to = main_menu)
+    dynamic_menu = Menu(name = "Dynamic Menus", exit_to = main_menu)
+
+    menu_A = Menu(name="Menu_A", exit_to = main_menu, end_to = Menu.exit_to)
+    menu_B = Menu(name="Menu_B", exit_to = dynamic_menu, escape_to = Menu.exit_to)
 
 
     main_menu.append(
         ("e", "Test Lazy Eval", (lazy_menu, (),)),
         ("b", "Test Builtins", (builtin_menu, (),)),
+        ("d", "Test Dynamic Menus", (dynamic_menu, (),))
     )
 #
     lazy_menu.append(
@@ -33,7 +40,11 @@ def main():
         ("r", "Result Memory", (
             input, "++n: ", int, result, print, "Partial Sums:"
             ) + sum([(sum, [result[-2*j-2] for j in range(u+1)], print, result) for u in range(10)], start = ())
-        )
+        ),
+
+        ("m", "menu composition", (
+            input, "string for menu_A: ", menu_A, result
+        ))
 
     )
 #
@@ -52,6 +63,34 @@ def main():
             print, B(lambda b: "crisis averted!" if b else "deleting...\nsystem32 cannot be deleted!", result)
         )),
     )
+#
+    dynamic_menu.append(
+        ("x", "test keyword function compositions", (
+            lambda: 0, (),
+            menu_B, result,
+        )),
+        ("n", "test notebook diagram", (
+            M0, (0),
+            print, result
+        ))
+    )
+
+
+#---------------------------------------------------------------------------------------------------------------------
+    menu_A.append(
+        ("m", "reverse and print", (
+            lambda s: s[::-1], result, print, result
+        ))
+    )
+#
+    menu_B.append(
+        ("s", "test escape_to", (
+            escape_on, (3, result),
+            print, result,
+            menu_B, B(lambda n: n+1, result[-2])
+        ))
+    )
+
 
     main_menu()
 
