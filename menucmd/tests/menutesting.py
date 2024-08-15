@@ -1,7 +1,6 @@
 from menucmd import Menu, edit_list, yesno_ver, f_escape, f_switch, escape_on
 from menucmd import Bind as B
-from notebook_test import M0
-
+#from notebook_test import M0
 import numpy as np
 
 
@@ -22,7 +21,7 @@ def main():
     main_menu.append(
         ("e", "Test Lazy Eval", (lazy_menu, (),)),
         ("b", "Test Builtins", (builtin_menu, (),)),
-        ("d", "Test Dynamic Menus", (dynamic_menu, (),))
+        #("d", "Test Dynamic Menus", (dynamic_menu, (),))
     )
 #
     lazy_menu.append(
@@ -70,10 +69,12 @@ def main():
             lambda: 0, (),
             menu_B, result,
         )),
+        """""
         ("n", "test notebook diagram", (
             M0, (0),
             print, result
         ))
+        """""
     )
 
 
