@@ -28,8 +28,6 @@ class Escape():
         return f"<class Escape[{self.val}]>"
     def __eq__(self, other):
         return isinstance(other, Escape) and self.val == other.val
-    #def __call__(self):
-    #    return self.x
 
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -63,9 +61,13 @@ class Menu():
                  ):
         #Pass parameters
         self.name = name
-        self.exit_to = exit_to
+        self.exit_to, self.exit_key, self.exit_message = exit_to, exit_key, exit_message
+
+        #Depreciated
         self.arg_to = arg_to
         self.return_to = return_to
+        #
+
         self.empty_message = empty_message
 
         #Break point matching heirarchy
@@ -81,8 +83,8 @@ class Menu():
         self.menu = {}                   #{"key":(function-arg chain)}
 
         #Set exit option
-        self.exit = (exit_key, exit_message, (exit_to, ()))
-        self.update_menu(self.exit)
+        self.exit = ()
+        self.ch_exit()
 
 
     #TODO
@@ -107,9 +109,13 @@ class Menu():
         #Select Item
         switch = self.menu[selection]
 
-        #Evaluate Function Chain
-        result = maybe_arg(self.arg_to)(arg) if selection != self.exit[0] else arg
+        #Evaluate arg_to if not exit_key
+        #result = maybe_arg(self.arg_to)(arg) \
+        #    if selection != self.exit[0] else arg
+        result = arg
         results = [result]    #TODO change in docs to be 1-based, 0 being from the menu call itself
+
+        #Evaluate Function Chain
         while len(switch) >= 2:
             #Get func/args pair
             func = switch[0]
@@ -130,7 +136,7 @@ class Menu():
 
             #Manual escape
             if isinstance(result, Escape):
-                ESC = result[arg] if result.val == self.escape.here else result #TODO diversify for monad
+                ESC = result[arg] if result.val == self.escape.here else result  #does this need value mapping?
                 return maybe_arg(self.escape_to)(ESC.val)
 
             #End Loop
@@ -138,7 +144,7 @@ class Menu():
             switch = switch[2:]
 
         #Evaluate return_to if not exit key
-        result = maybe_arg(self.return_to)(result) if selection != self.exit[0] else result
+        #result = maybe_arg(self.return_to)(result) if selection != self.exit[0] else result
 
         #Go to end_to if final value is None
         return result if result is not None else maybe_arg(self.end_to)(arg)
@@ -161,9 +167,11 @@ class Menu():
         --*{forces exit key to the end of the list}*--
         """
         self.menu_display_list = self.menu_display_list[:-1]
+        self.menu_item_list = self.menu_item_list[:-1]
         for n in data + (self.exit,):
             self.menu_item_list.append(n)
             self.update_menu(n)
+
 
 
     def clear(self):
@@ -194,6 +202,18 @@ class Menu():
         self.menu[data[0]] = data[2]
 
 
+    #Use this to change properties of the exit item
+    def ch_exit(self, exit_to = False, exit_key = False, exit_message = False) -> None:
+        self.exit_to = exit_to if exit_to else self.exit_to
+        self.exit_key = exit_key if exit_to else self.exit_to
+        self.exit_message = exit_message if exit_message else self.exit_message
+
+        self.exit = (self.exit_key, self.exit_message, (self.exit_to, Menu.result))
+        self.delete(-1)
+        self.update_menu(self.exit)
+
+
+
 
 #----------------------------------------------------------------------------------------------------------------------
 #Lazy Evaluation
@@ -217,7 +237,7 @@ class Bind():
     def lazy_eval(func, args = (), kwargs = {}):
         """Depth-first evaluation of nested function/argument bindings."""
         func = func() if isinstance(func, Bind.Wrapper) else func
-        args = tupler(x() if isinstance(x, Bind.Wrapper) else x for x in tupler(args))
+        args = tupler(arg() if isinstance(arg, Bind.Wrapper) else arg for arg in tupler(args))
         kwargs = {k: v() if isinstance(v, Bind.Wrapper) else v for k, v in kwargs.items()}
 
         return func(*args, **kwargs)

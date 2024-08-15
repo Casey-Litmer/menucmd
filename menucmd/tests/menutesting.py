@@ -1,6 +1,7 @@
 from menucmd import Menu, edit_list, yesno_ver, f_escape, f_switch, escape_on
 from menucmd import Bind as B
 from notebook_test import M0
+
 import numpy as np
 
 

@@ -17,3 +17,6 @@ dist/
 *.egg-info/
 
 setup.py
+
+notebook_test.py
+notebook_test2.py

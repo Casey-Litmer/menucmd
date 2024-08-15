@@ -150,7 +150,13 @@ def maybe_arg(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except TypeError:
-            return func()
+        except TypeError as e:
+            if "positional argument" in str(e):
+                return func()
+            else:
+                raise
 
     return wrapper
+
+
+
