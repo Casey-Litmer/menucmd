@@ -8,8 +8,6 @@ __pycache__/
 
 Git Exclude/
 
-jsonmacros.py
-
 build/
 
 dist/
@@ -19,4 +17,3 @@ dist/
 setup.py
 
 notebook_test.py
-notebook_test2.py

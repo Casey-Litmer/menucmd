@@ -14,14 +14,13 @@ def main():
     builtin_menu = Menu(name = "Builtins", exit_to = main_menu)
     dynamic_menu = Menu(name = "Dynamic Menus", exit_to = main_menu)
 
-    menu_A = Menu(name="Menu_A", exit_to = main_menu, end_to = Menu.exit_to)
+    menu_A = Menu(name="Menu_A", exit_to = lazy_menu, end_to = Menu.exit_to)
     menu_B = Menu(name="Menu_B", exit_to = dynamic_menu, escape_to = Menu.exit_to)
-
 
     main_menu.append(
         ("e", "Test Lazy Eval", (lazy_menu, (),)),
         ("b", "Test Builtins", (builtin_menu, (),)),
-        #("d", "Test Dynamic Menus", (dynamic_menu, (),))
+        ("d", "Test Dynamic Menus", (dynamic_menu, (),)),
     )
 #
     lazy_menu.append(
@@ -44,8 +43,7 @@ def main():
 
         ("m", "menu composition", (
             input, "string for menu_A: ", menu_A, result
-        ))
-
+        )),
     )
 #
     builtin_menu.append(
@@ -69,12 +67,19 @@ def main():
             lambda: 0, (),
             menu_B, result,
         )),
-        """""
-        ("n", "test notebook diagram", (
-            M0, (0),
-            print, result
+
+        ("s", "Menu.self usage: insert new item here", (
+            Menu.insert, (Menu.self, 0, ("*", "Nice Job!", (main_menu, "*"))),
         ))
-        """""
+
+        #("d", "open this menu but with exit_to end program", (
+        #    dynamic_menu, 1
+        #))
+
+        #("n", "test notebook diagram", (
+        #    M0, (0),
+        #    print, result
+        #))
     )
 
 
@@ -110,7 +115,7 @@ def shuffle_cards() -> np.array:
 
 def pick_card(n: int, deck: np.array) -> str:
     display_suite = {0:"Clubs", 1:"Spades", 2:"Hearts", 3:"Diamonds"}
-    display_number = {0:"Ace"} | {v:str(v+1) for v in range(1,9)} | {10:"Jack", 11:"Queen", 12:"King"}
+    display_number = {0:"Ace"} | {v:str(v+1) for v in range(1,10)} | {10:"Jack", 11:"Queen", 12:"King"}
 
     return display_number[deck[n][1]] + " of " + display_suite[deck[n][0]]
 

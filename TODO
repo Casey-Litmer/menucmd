@@ -1,0 +1,42 @@
+TODO
+
+
+* end_to now has access to results and thus supports Bind.  Does that mean default eval with arg = result[0] is obsolete?
+  Does it make sense with excepting None returns in general?
+  Does it make sense with escape_to?
+
+
+ * Update docs on all new stuff
+
+
+ * Upload newest version using PyTools4Windows
+
+
+
+
+
+
+
+
+(Menu.self, arg)
+(Menu.self.append, (*args))
+
+
+ {  std   ->   inline  }
+
+   def/call      def
+func(arg) -> (func, arg)              func                    O
+     ^            ^
+     |            |
+     V            V
+self.func(arg) -> (self.func, arg)             meth            X
+    call           def
+      ^              ^
+      |              |
+      V              V
+func(self, arg)  -> (func, (self, arg))       func/meth          O
+    def/call                def
+
+
+
+
