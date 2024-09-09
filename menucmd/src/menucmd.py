@@ -1,4 +1,4 @@
-from macrolib.typemacros import tupler, dict_union, list_union, replace_value_nested, maybe_arg
+from macrolibs.typemacros import tupler, dict_union, list_union, replace_value_nested, maybe_arg
 from copy import copy
 from typing import Any
 
