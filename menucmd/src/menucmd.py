@@ -280,9 +280,10 @@ def f_escape(*args, **kwargs) -> Menu.escape:
     return Menu.escape
 
 
-def f_switch(n: int, funcs: tuple) -> Bind.Wrapper:
-    """Returns a lazy function of type (int -> function)"""
+def f_switch(n: int | str | Any, funcs: list | tuple | dict) -> Bind.Wrapper:
+    """Returns a lazy function of type (Any index -> function)"""
     return Bind(lambda b: funcs[b], n)
+
 
 
 #----------------------------------------------------------------------------------------------------------------------
