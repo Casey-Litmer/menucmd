@@ -305,11 +305,32 @@ def edit_list(entries: list | tuple, **kwargs) -> list | tuple:
     """Delete items in a list/tuple; returns updated list/tuple"""
     kwargs_ = {"name":"Edit List"} | kwargs | {"exit_to":lambda: entries}
     menu = Menu(**kwargs_)
+
     for n, entry in enumerate(entries):
-        menu.append((str(n), str(entry), (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(kwargs)))))
+        menu.append((str(n+1), str(entry), (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(kwargs)))))
 
     return menu()
 
+
+def choose_item(entries: list | tuple | dict | set, exit_val = None, **kwargs) -> list | tuple | dict | set:
+    """Pick and return an element from a list/tuple/dict/set.
+    On exit key, return 'exit_val' (None by default)
+    """
+    kwargs_ = {"name": "Edit List"} | kwargs | {"exit_to": lambda: exit_val}
+    menu = Menu(**kwargs_)
+
+    if isinstance(entries, list | tuple | set):
+        for n, entry in enumerate(entries):
+            menu.append((str(n+1), str(entry), (Menu.id, entries[n])))
+
+    elif isinstance(entries, dict):
+        for n, (k, v) in enumerate(entries.items()):
+            menu.append((str(n+1), f"{k}:{v}", (Menu.id, v)))
+
+    else:
+        raise TypeError
+
+    return menu()
 
 #----------------------------------------------------------------------------------------------------------------------
 #Dynamic Menus

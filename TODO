@@ -15,6 +15,11 @@ TODO
 
 
 
+* Added choose_item:: list x tuple x dict x set -> Any
+
+  How to extend edit_list to -> dict x set ?
+
+
 
 
 
