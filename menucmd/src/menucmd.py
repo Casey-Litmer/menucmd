@@ -1,4 +1,5 @@
-from macrolibs.typemacros import tupler, dict_union, list_union, replace_value_nested, maybe_arg
+from macrolibs.typemacros import (tupler, dict_union, list_union, dict_compliment,
+                                  type_compliment, replace_value_nested, maybe_arg)
 from copy import copy
 from typing import Any
 
@@ -95,7 +96,7 @@ class Menu():
         Menu.result[0] == arg
         """
         #Evaluate arg_to and add 0th result
-        result = maybe_arg(self.arg_to)(arg)  #arg_to = B(print, "hello") for example.  Make clear in docs that Bind.wrapper can be called without args
+        result = maybe_arg(self.arg_to)(arg)  #arg_to = B(print, "hello") for example.  Make clear in docs that Bind.wrapper can be called with or without args
         results = [result]  #TODO change in docs to be 1-based, 0 being from the menu call itself
 
         #List state logic
@@ -116,7 +117,7 @@ class Menu():
         #Select Item
         switch = self.menu[selection]
 
-        #Exit menu
+        #Exit menu if exit_key pressed
         if selection == self.exit_key:
             return maybe_arg(switch[0])(arg)
 
@@ -246,13 +247,13 @@ class Bind():
 
     Bind(func, args1, kwargs1)(args2, kwargs2) -> func(*args1, *args2, **kwargs1, **kwargs2)
     """
-    class Wrapper(list):
+    class Wrapper(tuple):
         def __call__(self, *args, **kwargs):
             return Bind.lazy_eval(self[0], self[1] + args, self[2] | kwargs)
-
+    #changed parent from list to tuple.  Check here first if something goes wrong!  :)))))))))))
 
     def __new__(cls, func, *args, **kwargs) -> Wrapper:
-        return cls.Wrapper([func, args, kwargs])
+        return cls.Wrapper((func, args, kwargs))
 
 
     @staticmethod
@@ -279,7 +280,7 @@ def f_escape(*args, **kwargs) -> Menu.escape:
     """Polymorphic in-line escape function."""   #terminal morphism in Hom(*,escape)
     return Menu.escape
 
-
+#TODO update description
 def f_switch(n: int | str | Any, funcs: list | tuple | dict) -> Bind.Wrapper:
     """Returns a lazy function of type (Any index -> function)"""
     return Bind(lambda b: funcs[b], n)
@@ -300,23 +301,31 @@ def yesno_ver(yes = True, no = False, **kwargs) -> bool | Any:
 
     return menu()
 
-
-def edit_list(entries: list | tuple, **kwargs) -> list | tuple:
+#TODO update docs
+def edit_list(entries: list | tuple | dict | set, **kwargs) -> list | tuple | dict | set:
     """Delete items in a list/tuple; returns updated list/tuple"""
     kwargs_ = {"name":"Edit List"} | kwargs | {"exit_to":lambda: entries}
     menu = Menu(**kwargs_)
+    if isinstance(entries, list | tuple | set):
+        for n, entry in enumerate(entries):
+            menu.append((str(n+1), str(entry), (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(kwargs)))))
 
-    for n, entry in enumerate(entries):
-        menu.append((str(n+1), str(entry), (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(kwargs)))))
+    elif isinstance(entries, dict):
+        for n, (k, v) in enumerate(entries.items()):
+            menu.append((str(n+1), f"{k}:{v}", (edit_list, (dict_compliment(entries, {k:v}), Menu.kwargs(kwargs)))))
+    else:
+        raise TypeError
 
-    return menu()
+    return type(entries)(menu())
 
 
+#TODO add to docs
 def choose_item(entries: list | tuple | dict | set, exit_val = None, **kwargs) -> list | tuple | dict | set:
     """Pick and return an element from a list/tuple/dict/set.
+    Returns (key, value) pair for dict.
     On exit key, return 'exit_val' (None by default)
     """
-    kwargs_ = {"name": "Edit List"} | kwargs | {"exit_to": lambda: exit_val}
+    kwargs_ = {"name": "Choose Item"} | kwargs | {"exit_to": lambda: exit_val}
     menu = Menu(**kwargs_)
 
     if isinstance(entries, list | tuple | set):
@@ -325,12 +334,19 @@ def choose_item(entries: list | tuple | dict | set, exit_val = None, **kwargs) -
 
     elif isinstance(entries, dict):
         for n, (k, v) in enumerate(entries.items()):
-            menu.append((str(n+1), f"{k}:{v}", (Menu.id, v)))
-
+            menu.append((str(n+1), f"{k}:{v}", (Menu.id, ((k, v),))))
     else:
         raise TypeError
 
     return menu()
+
+#TODO: add to docs!
+def choose_items(entries: list | tuple | dict | set, **kwargs) -> list | tuple | dict | set:
+    """Pick and return mutiple elements from a list/tuple/dict/set."""
+    return type_compliment(entries, edit_list(entries, **kwargs))
+
+print(choose_items({1:1,2:2,3:3}))
+
 
 #----------------------------------------------------------------------------------------------------------------------
 #Dynamic Menus

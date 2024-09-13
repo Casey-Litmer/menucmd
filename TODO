@@ -1,16 +1,20 @@
 TODO
 
 
+* address all comments!
+
+
 * end_to now has access to results and thus supports Bind.  Does that mean default eval with arg = result[0] is obsolete?
   Does it make sense with excepting None returns in general?
   Does it make sense with escape_to?
 
 
- * Update docs on all new stuff
+* Update docs on all new stuff
 
 
- * Upload newest version using PyTools4Windows
+ X* Upload newest version using PyTools4Windows
 
+     On 'pre-release'
 
 
 
@@ -18,6 +22,12 @@ TODO
 * Added choose_item:: list x tuple x dict x set -> Any
 
   How to extend edit_list to -> dict x set ?
+
+
+
+
+
+
 
 
 
