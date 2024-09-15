@@ -1,4 +1,5 @@
-from macrolib.typemacros import tupler, dict_union, list_union, replace_value_nested, maybe_arg
+from macrolibs.typemacros import (tupler, dict_union, list_union, dict_compliment,
+                                  type_compliment, replace_value_nested, maybe_arg)
 from copy import copy
 from typing import Any
 
@@ -19,18 +20,6 @@ class Result():
         return isinstance(other, Result) and self.n == other.n
 
 
-class Escape():
-    here = object()  #Tells the menu to escape with its initial argument
-
-    def __init__(self, x = None):
-        self.val = x
-    def __getitem__(self, x):
-        return Escape(x)
-    def __repr__(self):
-        return f"<class Escape[{self.val}]>"
-    def __eq__(self, other):
-        return isinstance(other, Escape) and self.val == other.val
-
 
 #----------------------------------------------------------------------------------------------------------------------
 #Menu Class
@@ -42,7 +31,7 @@ class Menu():
 
     #Keyword Objects
     result = Result(-1)
-    escape = Escape()
+    escape = object()
     self = object()
     end = lambda: None   #force end_to function
 
@@ -68,6 +57,8 @@ class Menu():
         self.name = name
         self.empty_message = empty_message
         self.exit_to, self.exit_key, self.exit_message = exit_to, exit_key, exit_message
+
+        #Replace self references in arg_to if it is a Bind.Wrapper object
         self.arg_to = replace_value_nested(tupler(arg_to), Menu.self, self)[0]
 
         #Break point matching heirarchy
@@ -95,7 +86,7 @@ class Menu():
         Menu.result[0] == arg
         """
         #Evaluate arg_to and add 0th result
-        result = maybe_arg(self.arg_to)(arg)  #arg_to = B(print, "hello") for example.  Make clear in docs that Bind.wrapper can be called without args
+        result = maybe_arg(self.arg_to)(arg)  #arg_to = B(print, "hello") for example.  Make clear in docs that Bind.wrapper can be called with or without args
         results = [result]  #TODO change in docs to be 1-based, 0 being from the menu call itself
 
         #List state logic
@@ -116,7 +107,7 @@ class Menu():
         #Select Item
         switch = self.menu[selection]
 
-        #Exit menu
+        #Exit menu if exit_key pressed
         if selection == self.exit_key:
             return maybe_arg(switch[0])(arg)
 
@@ -133,7 +124,7 @@ class Menu():
             result = Bind.lazy_eval(func, args, kwargs)
 
             #Manual escape
-            if isinstance(result, Escape):
+            if result == Menu.escape:
                 return maybe_arg(self.escape_to)(arg)
 
             #End Loop
@@ -141,8 +132,14 @@ class Menu():
             switch = switch[2:]
 
         #Go to end_to if final value is None
-        return result if result is not None else \
-            maybe_arg(self.replace_keywords(self.end_to, (), results)[0])(arg)  #TODO update docs
+        return result if result is not None else maybe_arg(self.end_to)(arg)
+
+        #Maybe do this in the future for None returns:
+        #maybe_arg(self.replace_keywords(self.end_to, (), results)[0])(arg)
+        #
+        #It doesn't make sense to have two refs to result[0] = arg
+        #but built-in behaviour switching via Bind based on past results might be better than
+        #using inline functions to switch between a result return and a None return
 
 
     def replace_keywords(self, func, args: tuple, results: list) -> tuple:
@@ -220,9 +217,9 @@ class Menu():
         self.menu[data[0]] = data[2]
 
 
-    def ch_exit(self, exit_to = False, exit_key = False, exit_message = False) -> None:
+    def ch_exit(self, exit_to = None, exit_key = None, exit_message = None) -> None:
         """Changes the properties of the exit key and appends it to the list
-        :return: None
+
         """
         self.exit_to = exit_to if exit_to else self.exit_to
         self.exit_key = exit_key if exit_key else self.exit_key
@@ -263,73 +260,3 @@ class Bind():
         kwargs = {k: v() if isinstance(v, Bind.Wrapper) else v for k, v in kwargs.items()}
 
         return func(*args, **kwargs)
-
-
-
-#----------------------------------------------------------------------------------------------------------------------
-#In-Line Functions
-
-def escape_on(x, value):
-    """Returns an escape if the two arguments are equal.
-    Otherwise, returns value."""
-    return Menu.escape if x == value else value
-
-
-def f_escape(*args, **kwargs) -> Menu.escape:
-    """Polymorphic in-line escape function."""   #terminal morphism in Hom(*,escape)
-    return Menu.escape
-
-
-def f_switch(n: int, funcs: tuple) -> Bind.Wrapper:
-    """Returns a lazy function of type (int -> function)"""
-    return Bind(lambda b: funcs[b], n)
-
-
-#----------------------------------------------------------------------------------------------------------------------
-#Builtin Menus
-
-#TODO add yes/no tags to docs
-def yesno_ver(yes = True, no = False, **kwargs) -> bool | Any:
-    """Simple yes/no verification returning bool be default
-    Use yes and no tags to specify otherwise"""
-    kwargs_ = ({"name":"Are you sure?", "exit_message":"cancel"} | kwargs |
-               {"exit_to":lambda: no, "end_to":lambda: None})
-    menu = Menu(**kwargs_)
-    menu.append(("x", "yes", (lambda: yes, ())))
-
-    return menu()
-
-
-def edit_list(entries: list | tuple, **kwargs) -> list | tuple:
-    """Delete items in a list/tuple; returns updated list/tuple"""
-    kwargs_ = {"name":"Edit List"} | kwargs | {"exit_to":lambda: entries}
-    menu = Menu(**kwargs_)
-    for n, entry in enumerate(entries):
-        menu.append((str(n), str(entry), (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(kwargs)))))
-
-    return menu()
-
-
-#----------------------------------------------------------------------------------------------------------------------
-#Dynamic Menus
-
-#WIP
-def dynamic_wrapper(dyn_func, *args, **kwargs) -> Bind.Wrapper:
-    """WIP
-    Intended as a wrapper for arg_to (for now)
-
-    Usage: Menu(arg_to = dynamic_wrapper(dyn_func, *args, **kwargs))
-
-    Takes a func dyn_func: (menu_id, arg, *args, **kwargs) -> arg -> result[0]
-
-    Example:
-    def dyn_func(menu_id, arg, *items):
-        menu_id.append(*items)
-        return arg
-
-    dyn_func must refer to the menu in its first argument, the menu argument for its second,
-    and can take any additional *args/**kwargs.
-    It is intended for arbitrary use of menu methods to dynamically change the menu on run.
-    """
-    return Bind(lambda menu_id, arg: dyn_func(menu_id, arg, *args, **kwargs), Menu.self)
-

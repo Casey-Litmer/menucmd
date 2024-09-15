@@ -8,6 +8,8 @@ __pycache__/
 
 Git Exclude/
 
+commandmenu_config.json
+
 build/
 dist/
 *.egg-info/
