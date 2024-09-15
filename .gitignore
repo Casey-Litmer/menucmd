@@ -9,10 +9,10 @@ __pycache__/
 Git Exclude/
 
 build/
-
 dist/
-
 *.egg-info/
+
+commandmenu_config.json
 
 setup.py
 
