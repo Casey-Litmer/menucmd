@@ -1,4 +1,4 @@
-from menucmd import Menu, edit_list, yesno_ver, f_escape, f_switch, escape_on
+from menucmd import *
 from menucmd import Bind as B
 #from notebook_test import M0
 import numpy as np
@@ -51,6 +51,12 @@ def main():
             input, ("List items (separated by spaces): "),
             edit_list, (B(lambda s: s.split(), result), kwargs(name = "Delete Items")),
             print, ("New string:\n", B(" ".join, result)),
+        )),
+
+        ("c", "Choose Item", (
+            input, ("List items (separated by spaces): "),
+            choose_item, (B(lambda s: s.split(), result), kwargs(name="Delete Items")),
+            print, ("New string:\n", result),
         )),
 
         ("v", "Confirmation", (
