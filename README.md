@@ -808,7 +808,7 @@ made soley for the purpose of elegence.
 ### Menu.end
 
 Shorthand for `lambda: None`.  Put this at the end of a function chain to evoke `end_to`.
-
+ 
 
 ----
 ### Using Matching Keywords
