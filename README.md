@@ -59,6 +59,7 @@ interface.
    - `escape_to` and `Menu.escape`
    - `Menu.self`
    - `Menu.id`
+   - `Menu.end`
    - Matching Keywords
 ### 6. Builtins
    - In-line Functions
@@ -802,6 +803,12 @@ Shorthand for the identity morphism `lambda x:x`.  This is an arbitrary function
 made soley for the purpose of elegence.  
 
 *It has nothing to do with `menu.id` where **menu** is an instance of `Menu`!*
+
+----
+### Menu.end
+
+Shorthand for `lambda: None`.  Put this at the end of a function chain to evoke `end_to`.
+
 
 ----
 ### Using Matching Keywords
