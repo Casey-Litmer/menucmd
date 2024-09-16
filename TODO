@@ -1,6 +1,18 @@
 TODO
 
 
+* Bind only evaluates direct nestings of itself.   for example:
+
+    B(f, B(g, z), x, y) will evaluate g(y)
+but B(f', [B(g,z), x], y) will not!
+
+(both domains of f and f' are isomorphic)
+so...
+  is this something that needs to be changed for sake of completeness?  or just let it be?
+
+
+
+
 X* address all comments!
 
 
