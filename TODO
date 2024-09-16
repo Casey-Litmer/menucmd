@@ -3,7 +3,7 @@ TODO
 
 * Bind only evaluates direct nestings of itself.   for example:
 
-    B(f, B(g, z), x, y) will evaluate g(y)
+    B(f, B(g, z), x, y) will evaluate g(z)
 but B(f', [B(g,z), x], y) will not!
 
 (both domains of f and f' are isomorphic)
