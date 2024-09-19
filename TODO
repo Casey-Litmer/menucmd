@@ -1,7 +1,7 @@
 TODO
 
 
-* Bind only evaluates direct nestings of itself.   for example:
+X* Bind only evaluates direct nestings of itself.   for example:
 
     B(f, B(g, z), x, y) will evaluate g(z)
 but B(f', [B(g,z), x], y) will not!
@@ -10,6 +10,8 @@ but B(f', [B(g,z), x], y) will not!
 so...
   is this something that needs to be changed for sake of completeness?  or just let it be?
 
+    X Added a comment about it.  It doesn't make sense for menucmd, but in future lazy eval programs it might...
+      (Consider adding to macrolibs)
 
 
 

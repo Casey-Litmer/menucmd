@@ -5,9 +5,9 @@ from macrolibs.typemacros import dict_compliment, type_compliment
 #In-Line Functions
 
 def escape_on(x, value):
-    """Returns an escape if the two arguments are equal.
-    Otherwise, returns value."""
-    return Menu.escape if x == value else value
+    """Returns Menu.escape if the two arguments are equal.
+    Otherwise, return x."""
+    return Menu.escape if x == value else x
 
 
 def f_escape(*args, **kwargs) -> Menu.escape:
