@@ -1,5 +1,5 @@
 from menucmd import *
-
+from macrolibs.typemacros import dict_compliment, type_compliment
 
 #----------------------------------------------------------------------------------------------------------------------
 #In-Line Functions

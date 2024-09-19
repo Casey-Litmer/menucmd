@@ -1,5 +1,4 @@
-from macrolibs.typemacros import (tupler, dict_union, list_union, dict_compliment,
-                                  type_compliment, replace_value_nested, maybe_arg)
+from macrolibs.typemacros import (tupler, dict_union, list_union, replace_value_nested, maybe_arg)
 from copy import copy
 from typing import Any
 
@@ -219,7 +218,6 @@ class Menu():
 
     def ch_exit(self, exit_to = None, exit_key = None, exit_message = None) -> None:
         """Changes the properties of the exit key and appends it to the list
-
         """
         self.exit_to = exit_to if exit_to else self.exit_to
         self.exit_key = exit_key if exit_key else self.exit_key
@@ -260,3 +258,26 @@ class Bind():
         kwargs = {k: v() if isinstance(v, Bind.Wrapper) else v for k, v in kwargs.items()}
 
         return func(*args, **kwargs)
+"""""
+Do this to evaluate Binds recursively through ALL data structures, not just immediate Bind nestings.
+This might not be the best usage because the user cannot use Bind objects in a data structure without evaluating
+everything at the same time.  Adding a keyword argument to change the desired behaviour might be the right course
+but for menucmd, it does not matter.
+
+    
+    def lazy_eval(func, args = (), kwargs = {}):
+        func = func() if isinstance(func, Bind.Wrapper) else func
+
+        def r_eval(data):
+            if isinstance(data, Bind.Wrapper):
+                return data()
+            elif isinstance(data, list | tuple):
+                return type(data)(r_eval(x) for x in data)
+            else:
+                return data
+
+        args = tupler(r_eval(arg) for arg in tupler(args))
+        kwargs = {k:r_eval(v) for k, v in kwargs.items()}
+    
+        return func(*args, **kwargs)
+"""""
