@@ -44,6 +44,13 @@ def main():
         ("m", "menu composition", (
             input, "string for menu_A: ", menu_A, result
         )),
+
+        ("i", "iterator test", (
+            input, "list (separated by spaces)", tuple, B(lambda x:x.split(), result),
+            print, ("result call: ", result.expand()),
+            lambda x, y, z: x+y+z, result[-2].expand(),
+            print, result
+        ))
     )
 #
     builtin_menu.append(

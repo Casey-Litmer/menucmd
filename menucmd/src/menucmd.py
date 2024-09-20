@@ -1,23 +1,23 @@
-from macrolibs.typemacros import (tupler, dict_union, list_union, replace_value_nested, maybe_arg)
+from macrolibs.typemacros import tupler, dict_union, list_union, tuple_union
+from macrolibs.typemacros import replace_value_nested, maybe_arg, copy_type, maybe_type
 from copy import copy
-from typing import Any
+from typing import Any, Iterator
 
 
 #----------------------------------------------------------------------------------------------------------------------
 #Keyword Types
 
-#How to generic type cover like this instead of writing these out?
-#is there a simpler way to (hint) 'typeclass' these?
 class Result():
     def __init__(self, n: int):
         self.n = n
     def __getitem__(self, n: int):
-        return Result(n)
+        return type(self)(n)
     def __repr__(self):
         return f"<class Result[{self.n}]>"
     def __eq__(self, other):
-        return isinstance(other, Result) and self.n == other.n
-
+        return type(self) == type(other) and self.n == other.n
+    def expand(self):
+        return copy_type(type(self), "expand")(self.n)
 
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -151,15 +151,21 @@ class Menu():
         func = replace_value_nested(tupler(func), Menu.self, self)[0]
         args = replace_value_nested(tupler(args), Menu.self, self)
 
+        #Tuple type to 'de-tuple'
+        expanded = copy_type(tuple, "expanded")
+
         #Replace Result Keywords
         N = len(results)
         for n in range(-N, N):
             func = replace_value_nested(tupler(func), Result(n), results[n])[0]
+            args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(expanded, results[n]))
             args = replace_value_nested(tupler(args), Result(n), results[n])
 
         #Separate args/kwargs
         kwargs = dict_union(tupler(x for x in args if isinstance(x, Menu.kwargs)))
-        args = tupler(x for x in args if not isinstance(x, Menu.kwargs))
+        args = tuple_union([tuple(x) if isinstance(x, expanded) else (x,)
+                            for x in args if not isinstance(x, Menu.kwargs)])
+                        #'Uninterprets' tupler for expanded results.  Allows inline notation for (*args) ~ result.expand()
 
         return (func, args, kwargs)
 
@@ -258,6 +264,7 @@ class Bind():
         kwargs = {k: v() if isinstance(v, Bind.Wrapper) else v for k, v in kwargs.items()}
 
         return func(*args, **kwargs)
+
 """""
 Do this to evaluate Binds recursively through ALL data structures, not just immediate Bind nestings.
 This might not be the best usage because the user cannot use Bind objects in a data structure without evaluating
