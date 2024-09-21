@@ -14,10 +14,15 @@ def f_escape(*args, **kwargs) -> Menu.escape:
     """Polymorphic in-line escape function."""   #terminal morphism in Hom(*,escape)
     return Menu.escape
 
+#TODO update docs
+def f_end(*args, **kwargs) -> None:
+    """Polymorphic in-line None return (end)"""  #terminal morphism in Hom(*, None)
+    return None
 
+#TODO change docs to express maybe_arg
 def f_switch(n: int | str | Any, funcs: list | tuple | dict) -> Bind.Wrapper:
     """Returns a lazy function of type (Any index -> function)"""
-    return Bind(lambda b: funcs[b], n)
+    return Bind(lambda b: maybe_arg(funcs[b]), n)
 
 
 

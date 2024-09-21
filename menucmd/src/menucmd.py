@@ -9,15 +9,17 @@ from typing import Any, Iterator
 
 class Result():
     def __init__(self, n: int):
-        self.n = n
+        self.__n__ = n
     def __getitem__(self, n: int):
         return type(self)(n)
     def __repr__(self):
         return f"<class Result[{self.n}]>"
     def __eq__(self, other):
-        return type(self) == type(other) and self.n == other.n
+        return type(self) == type(other) and self.__n__ == other.__n__
     def expand(self):
-        return copy_type(type(self), "expand")(self.n)
+        return copy_type(type(self), "expand")(self.__n__)  #TODO add to docs
+    def __getattr__(self, tag):
+        return self                                     #TODO add to docs
 
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -32,7 +34,7 @@ class Menu():
     result = Result(-1)
     escape = object()
     self = object()
-    end = lambda: None   #force end_to function
+    #end = lambda: None   #force end_to function
 
     __END__ = type("Menu.__END__", (object,), {})  #Terminal Object
     id = lambda x:x                                #Identity morphism
