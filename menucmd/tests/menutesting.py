@@ -50,6 +50,15 @@ def main():
             print, ("result call: ", result.expand()),
             lambda x, y, z: x+y+z, result[-2].expand(),
             print, result
+        )),
+        ("a", "Attribute test",(
+            input, "integer 1: ", int, result[-1].INT1,
+            input, "integer 2: ", int, result[-1].INT2,
+            print, (result.INT1, result.INT2),
+            print, ("INT1 : ", result.INT1[-1000000].INT1[314198].INT2.INT1),
+            tuple, ((result.INT1, result.INT2),),
+            print, ("expanded ", result[-1].EXP.expand()),
+            print, ("expanded (tagged)", result.EXP.expand())
         ))
     )
 #

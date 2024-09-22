@@ -1,25 +1,39 @@
 from macrolibs.typemacros import tupler, dict_union, list_union, tuple_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, copy_type, maybe_type
 from copy import copy
-from typing import Any, Iterator
 
 
 #----------------------------------------------------------------------------------------------------------------------
 #Keyword Types
 
+#TODO comments!
 class Result():
     def __init__(self, n: int):
         self.__n__ = n
+        self.__attr__ = None
+
     def __getitem__(self, n: int):
-        return type(self)(n)
+        att = self.__attr__
+        print(att)
+        return type(self)(n).__getattr__(self.__attr__)
+
     def __repr__(self):
         return f"<class Result[{self.n}]>"
+
     def __eq__(self, other):
-        return type(self) == type(other) and self.__n__ == other.__n__
+        #Compare by attribute if both have attributes
+        if self.__attr__ is not None and hasattr(other, "__attr__") and other.__attr__ is not None:
+            return type(self) == type(other) and self.__attr__ == other.__attr__
+        else:
+            return type(self) == type(other) and self.__n__ == other.__n__
+
     def expand(self):
-        return copy_type(type(self), "expand")(self.__n__)  #TODO add to docs
+        return copy_type(type(self), "expand")(self.__n__).__getattr__(self.__attr__)  #TODO add to docs
+
     def __getattr__(self, tag):
-        return self                                     #TODO add to docs
+        new_result = type(self)(self.__n__)
+        new_result.__attr__ = tag
+        return new_result                                    #TODO add to docs
 
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -34,7 +48,6 @@ class Menu():
     result = Result(-1)
     escape = object()
     self = object()
-    #end = lambda: None   #force end_to function
 
     __END__ = type("Menu.__END__", (object,), {})  #Terminal Object
     id = lambda x:x                                #Identity morphism
@@ -42,7 +55,6 @@ class Menu():
     #Kwargs Wrapper
     class kwargs(dict):
         pass
-
 
     def __init__(self,
                  name = "Choose Action",
@@ -65,6 +77,7 @@ class Menu():
         #Break point matching heirarchy
         self.end_to = self if end_to is None else \
             (self.exit_to if end_to is Menu.exit_to else end_to)
+
         self.escape_to = self if escape_to is None else \
             (self.exit_to if escape_to is Menu.exit_to else
              (self.end_to if escape_to is Menu.end_to else escape_to))
@@ -78,6 +91,9 @@ class Menu():
         self.exit = ()
         self.ch_exit()
 
+        #Tracked attributes for current result chain
+        self.tracked_attributes = {}
+
 
     def __call__(self, arg = None):
         """Runs menu with 'arg' asking for user input.
@@ -86,15 +102,19 @@ class Menu():
 
         Menu.result[0] == arg
         """
+        #Reset tracked attributes
+        self.tracked_attributes = {}
+
         #Evaluate arg_to and add 0th result
-        result = maybe_arg(self.arg_to)(arg)  #arg_to = B(print, "hello") for example.  Make clear in docs that Bind.wrapper can be called with or without args
-        results = [result]  #TODO change in docs to be 1-based, 0 being from the menu call itself
+        result = maybe_arg(self.arg_to)(arg)
+        results = [result]
 
         #List state logic
         if not self.menu_display_list[:-1]:
             #Exit on empty menu
             print(self.empty_message)
             selection = self.exit_key
+
         else:
             #Print Menu And Get Input
             show = f"\n{self.name}\n" + "\n".join(self.menu_display_list) + "\n"
@@ -156,12 +176,27 @@ class Menu():
         #Tuple type to 'de-tuple'
         expanded = copy_type(tuple, "expanded")
 
-        #Replace Result Keywords
+        #Replace Result Keywords by Attribute
+        for tag, val in self.tracked_attributes.items():
+
+            func = replace_value_nested(tupler(func), Result(0).__getattr__(tag), val)[0]
+            args = replace_value_nested(tupler(args), Result(0).__getattr__(tag).expand(), maybe_type(expanded, val))
+            args = replace_value_nested(tupler(args), Result(0).__getattr__(tag), val)
+
+        #Replace Result Keywords by Position
         N = len(results)
         for n in range(-N, N):
-            func = replace_value_nested(tupler(func), Result(n), results[n])[0]
-            args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(expanded, results[n]))
-            args = replace_value_nested(tupler(args), Result(n), results[n])
+
+            #Detect if a result has an attribute and add first declaration to tracked attributes
+            def track_attr(R, value):
+                if R.__attr__ is not None and R.__attr__ not in self.tracked_attributes.keys():
+                    self.tracked_attributes[R.__attr__] = value
+
+                return value
+
+            func = replace_value_nested(tupler(func), Result(n), results[n], callback= track_attr)[0]
+            args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(expanded, results[n]), callback= track_attr)
+            args = replace_value_nested(tupler(args), Result(n), results[n], callback= track_attr)
 
         #Separate args/kwargs
         kwargs = dict_union(tupler(x for x in args if isinstance(x, Menu.kwargs)))
