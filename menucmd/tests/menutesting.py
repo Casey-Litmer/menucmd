@@ -48,8 +48,7 @@ def main():
         ("i", "iterator test", (
             input, "list (separated by spaces)", tuple, B(lambda x:x.split(), result),
             print, ("result call: ", result.expand()),
-            lambda x, y, z: x+y+z, result[-2].expand(),
-            print, result
+            print, B(lambda x, y, z: x+y+z, result[-2].expand()),
         )),
         ("a", "Attribute test",(
             input, "integer 1: ", int, result[-1].INT1,
@@ -114,7 +113,7 @@ def main():
 #
     menu_B.append(
         ("s", "test escape_to", (
-            escape_on, (3, result),
+            escape_on, (result, 3),
             print, result,
             menu_B, B(lambda n: n+1, result[-2])
         ))

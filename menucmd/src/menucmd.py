@@ -4,36 +4,35 @@ from copy import copy
 
 
 #----------------------------------------------------------------------------------------------------------------------
-#Keyword Types
+#Result Type
 
-#TODO comments!
 class Result():
     def __init__(self, n: int):
         self.__n__ = n
         self.__attr__ = None
 
     def __getitem__(self, n: int):
-        att = self.__attr__
-        print(att)
         return type(self)(n).__getattr__(self.__attr__)
 
     def __repr__(self):
         return f"<class Result[{self.n}]>"
 
     def __eq__(self, other):
-        #Compare by attribute if both have attributes
+        """Compare by attribute if both self and other have attributes"""
         if self.__attr__ is not None and hasattr(other, "__attr__") and other.__attr__ is not None:
             return type(self) == type(other) and self.__attr__ == other.__attr__
         else:
             return type(self) == type(other) and self.__n__ == other.__n__
 
     def expand(self):
-        return copy_type(type(self), "expand")(self.__n__).__getattr__(self.__attr__)  #TODO add to docs
+        """Type to replace and expand in place.   *result <=> result.expand()"""
+        return copy_type(type(self), "expand")(self.__n__).__getattr__(self.__attr__)
 
     def __getattr__(self, tag):
+        """Index by attribute first.  If no attribute, index by index"""
         new_result = type(self)(self.__n__)
         new_result.__attr__ = tag
-        return new_result                                    #TODO add to docs
+        return new_result
 
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -145,7 +144,7 @@ class Menu():
             result = Bind.lazy_eval(func, args, kwargs)
 
             #Manual escape
-            if result == Menu.escape:
+            if result is Menu.escape:
                 return maybe_arg(self.escape_to)(arg)
 
             #End Loop
@@ -178,7 +177,6 @@ class Menu():
 
         #Replace Result Keywords by Attribute
         for tag, val in self.tracked_attributes.items():
-
             func = replace_value_nested(tupler(func), Result(0).__getattr__(tag), val)[0]
             args = replace_value_nested(tupler(args), Result(0).__getattr__(tag).expand(), maybe_type(expanded, val))
             args = replace_value_nested(tupler(args), Result(0).__getattr__(tag), val)
@@ -191,20 +189,39 @@ class Menu():
             def track_attr(R, value):
                 if R.__attr__ is not None and R.__attr__ not in self.tracked_attributes.keys():
                     self.tracked_attributes[R.__attr__] = value
-
                 return value
 
             func = replace_value_nested(tupler(func), Result(n), results[n], callback= track_attr)[0]
             args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(expanded, results[n]), callback= track_attr)
             args = replace_value_nested(tupler(args), Result(n), results[n], callback= track_attr)
 
+
         #Separate args/kwargs
         kwargs = dict_union(tupler(x for x in args if isinstance(x, Menu.kwargs)))
-        args = tuple_union([tuple(x) if isinstance(x, expanded) else (x,)
-                            for x in args if not isinstance(x, Menu.kwargs)])
-                        #'Uninterprets' tupler for expanded results.  Allows inline notation for (*args) ~ result.expand()
+        args = tupler(x for x in args if not isinstance(x, Menu.kwargs))
+
+        #'Uninterprets' tupler for expanded results.  Allows inline notation for (*args) ~ result.expand()
+        args = Menu.expand_in_place(args, expanded)
 
         return (func, args, kwargs)
+
+
+    @staticmethod
+    def expand_in_place(A: tuple | list, expand_type: type):
+        """Recursively expand all marked tuples/lists in a data structure
+        (a, [b, expanded((c, d))]) -> (a, [b, c, d])
+        """
+        new = type(A)()
+
+        for x in A:
+            if isinstance(x, expand_type):
+                new += tuple(x)
+            elif isinstance(x, tuple | list):
+                new += (type(x)(Menu.expand_in_place(x, expand_type)),)
+            else:
+                new += type(A)((x,))
+
+        return new
 
 
     def __getitem__(self, idx):
@@ -268,7 +285,6 @@ class Menu():
 
         self.exit = (self.exit_key, self.exit_message, (self.exit_to, ())) #will attempt to fill in argument with arg
         self.append()
-
 
 
 #----------------------------------------------------------------------------------------------------------------------

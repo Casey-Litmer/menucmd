@@ -15,12 +15,11 @@ def f_escape(*args, **kwargs) -> Menu.escape:
     """Polymorphic in-line escape function."""   #terminal morphism in Hom(*,escape)
     return Menu.escape
 
-#TODO update docs
 def f_end(*args, **kwargs) -> None:
     """Polymorphic in-line None return (end)"""  #terminal morphism in Hom(*, None)
     return None
 
-#TODO change docs to express maybe_arg
+
 def f_switch(n: int | str | Any, funcs: list | tuple | dict) -> Bind.Wrapper:
     """Returns a lazy function of type (Any index -> function)"""
     return Bind(lambda b: maybe_arg(funcs[b]), n)
@@ -52,12 +51,12 @@ def edit_list(entries: list | tuple | dict | set, display_as = lambda x:x, **kwa
     if isinstance(entries, list | tuple | set):
         for n, entry in enumerate(entries):
             menu.append((str(n+1), display_as(str(entry)),
-                         (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(kwargs)))))
+                         (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(display_as=display_as, **kwargs)))))
 
     elif isinstance(entries, dict):
         for n, (k, v) in enumerate(entries.items()):
             menu.append((str(n+1), f"{k}:{display_as(str(v))}",
-                         (edit_list, (dict_compliment(entries, {k:v}), Menu.kwargs(kwargs)))))
+                         (edit_list, (dict_compliment(entries, {k:v}), Menu.kwargs(display_as=display_as, **kwargs)))))
     else:
         raise TypeError
 

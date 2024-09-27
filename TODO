@@ -15,7 +15,9 @@ so...
 
 
 
-X* address all comments!
+
+* result.expand() only allows for direct nestings!!!  Extend the scope of this notation
+
 
 
 

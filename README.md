@@ -42,6 +42,8 @@ interface.
    - `Menu.result` Type
    - Using Past Results 
      - `result[n]`
+     - `result` attributes
+     - `result.expand()`
    - Using the `Bind` Class
    - Binding Functions and Kwargs
    - Calling a `Bind` Object
@@ -59,7 +61,6 @@ interface.
    - `escape_to` and `Menu.escape`
    - `Menu.self`
    - `Menu.id`
-   - `Menu.end`
    - Matching Keywords
 ### 6. Builtins
    - In-line Functions
@@ -443,19 +444,68 @@ menu1 = Menu(name = "Function Composition")
 #Append Items
 menu1.append(
     ("n", "square a number", (
-      input, "number: ", 
-      float, result, 
-      lambda n: n**2, result, 
-      print, result, 
-      print, result[2]  
-    )                   #result[2] prints the second result (= result[-3])
+        input, "number: ", 
+        float, result, 
+        lambda n: n**2, result, 
+        print, result, 
+        print, result[2]  
+    ))                     #result[2] prints the second result (= result[-3])
 )
 
 
 #Run
 menu1()
 ```
+-------
+### Result Tags
 
+When indexing a large number of results, it can quickly become confusing what each positional index refers to.  
+Instead of using `result[n]`, you can create attributes on the fly which is analogous to declaring variables.
+
+```commandline
+("n", "square a number", (
+    input, "number: ", 
+    float, result, 
+    lambda n: n**2, result[-1].NUMBER, 
+    print, result.SQUARED, 
+    print, result.NUMBER  
+))
+```
+The first time you declare a **tag**, it will be associated with the result from the previous function.  All following
+results with that **tag** will point to the first stored value, overwriting positional indexing.  In the above example, 
+the second `result.NUMBER` does not need to specify position **[2]** because the value from the first reference to `NUMBER`  
+is retrieved instead.
+
+*The stored memory for tagged results resets on each function chain execution, so the attribute namespace exists 
+**within each menu item!***
+
+-------
+### Result.expand()
+
+In standard python, a `list` or `tuple` can be expanded into a function's argument field with the `*` notation.
+In menucmd function composition, `result` objects can be marked for expansion with the `expand` method.
+
+For example:
+```commandline
+# func1: () -> (val1, val2, val3)              Returns a tuple of three values
+# func2: val1 -> val2 -> val3 -> val4          Accepts 3 arguments
+
+(
+    func1, (),
+    func2, result.expand(),
+    print, result,
+    ...
+)
+
+
+# Equivalent to:
+
+func2(*func1())
+```
+
+*It does not matter what order **indeces**, **tags**, or **methods** are specified in!* \
+`result[n].expand().TAG` evaluates the 
+same as `result.TAG[n].expand()` or any other permutation.
 
 -------
 ### Using the Bind Class
@@ -487,7 +537,7 @@ When a menu runs its function chains, it will evaluate all nested `Bind` objects
 By default, if you don't use `Bind` in a menu item, and set the internal **args** to `result`, Python will attempt
 to evaluate **func3(result)** before the item is even appended to the menu.  But **result** *doesn't exist yet!*
 
-A different way to appraoch the square number entry is to bind `float` with `result` and use it as the argument
+A different way to approach the square number entry is to bind `float` with `result` and use it as the argument
 to the squaring function:
 
 ```commandline
@@ -804,10 +854,6 @@ made soley for the purpose of elegence.
 
 *It has nothing to do with `menu.id` where **menu** is an instance of `Menu`!*
 
-----
-### Menu.end
-
-Shorthand for `lambda: None`.  Put this at the end of a function chain to evoke `end_to`.
  
 
 ----
@@ -895,9 +941,16 @@ Polymorphic in-line escape function.
 ```
 This function takes any **args** and **kwargs** and returns an `escape` object.
 
-*For nerds, this can be viewed as a collection of terminal morphisms
-for each object in the category of types and menu item functions!*
 
+
+
+-----
+### f_end (*args, **kwargs)
+```commandline
+Polymorphic in-line None return (end)
+```
+This function takes any **args** and **kwargs** and returns `None`. \
+*Put this at the end of a function chain to evoke `end_to`.*
 
 ----
 ### f_switch (n, funcs)
@@ -905,7 +958,7 @@ for each object in the category of types and menu item functions!*
 Returns a lazy function of type (Any index -> function)
 ```
 Takes an **index** and a `list`, `tuple`, or `dict` of functions and returns a 
-`Bind` object with an argument that indexes to each function.
+`Bind` object with an argument that indexes each function.
 
 Use this if you want a previous result to change which function runs next.
 ```commandline
@@ -913,15 +966,16 @@ functions = (func1, func2, func3)
 
 ...
 (
-input, ("choose a function (0-2) "), 
-f_switch(result, functions), (*args)
+    input, ("choose a function (0-2) "), 
+    f_switch(result, functions), (*args)
 )
 ...
 ```
 Since `f_switch` returns a `Bind` object that subsequently returns a `function`, be sure to ***call***
-it in the function slot.  Whatever function it switches to upon evaluating `result` (indexes the struct), 
-will then be evaluated with **args**, so *be sure that all of the functions in the collection have the same domain!*
+it in the function slot.  Whatever function it indexes upon evaluating `result`, 
+will then be evaluated with **args**.
 
+*If any function takes fewer arguments than provided, it will neglect the right-most arguments first!*
 
 -----
 ## Builtin Menus
