@@ -15,7 +15,7 @@ class Result():
         return type(self)(n).__getattr__(self.__attr__)
 
     def __repr__(self):
-        return f"<class Result[{self.n}]>"
+        return f"<class Result[{self.__n__}]>"
 
     def __eq__(self, other):
         """Compare by attribute if both self and other have attributes"""
@@ -165,8 +165,10 @@ class Menu():
     def replace_keywords(self, func, args: tuple, results: list) -> tuple:
         """Replaces all inline self references with the current menu.
         Replaces all Menu.result objects with function results from the chain.
+
         Returns a tuple in the form (func, args, kwargs).
-        The input args also includes all kwargs distinguished by the Menu.kwargs wrapper.
+
+        'args' may also include all kwargs distinguished by the Menu.kwargs wrapper.
         """
         #Replace self reference
         func = replace_value_nested(tupler(func), Menu.self, self)[0]
@@ -214,10 +216,13 @@ class Menu():
         new = type(A)()
 
         for x in A:
+            #Append all elements if marked as 'expanded'
             if isinstance(x, expand_type):
-                new += tuple(x)
+                new += type(A)(x)
+            #Run in nesting (recursion)
             elif isinstance(x, tuple | list):
-                new += (type(x)(Menu.expand_in_place(x, expand_type)),)
+                new += type(A)(((Menu.expand_in_place(x, expand_type)),))
+            #Do nothing
             else:
                 new += type(A)((x,))
 
@@ -296,14 +301,26 @@ class Bind():
     Creates a callable list of function / argument pairs in the form:
     [<function>, (args), {kwargs}]  ->  function(*args, **kwargs)
 
-    Calling a Bind object with additional args/kwargs will append (curry) them to its initial args/kwargs.
+    - Calling a Bind object with additional args/kwargs will append (curry) them to its initial args/kwargs.
 
-    Bind(func, args1, kwargs1)(args2, kwargs2) -> func(*args1, *args2, **kwargs1, **kwargs2)
+      Bind(func, args1, kwargs1)(args2, kwargs2) -> func(*args1, *args2, **kwargs1, **kwargs2)
+
+    - Use Bind(func, *args, **kwargs).fix() to toggle currying.
     """
     class Wrapper(list):
-        def __call__(self, *args, **kwargs):
-            return Bind.lazy_eval(self[0], self[1] + args, self[2] | kwargs)
+        def __init__(self, data = ()):
+            super().__init__(data)
+            self.fixed = False
 
+        def __call__(self, *args, **kwargs):
+            if self.fixed:
+                return Bind.lazy_eval(self[0], self[1], self[2])
+            else:
+                return Bind.lazy_eval(self[0], self[1] + args, self[2] | kwargs)
+
+        def fix(self):
+            self.fixed = not self.fixed
+            return self
 
     def __new__(cls, func, *args, **kwargs) -> Wrapper:
         return cls.Wrapper([func, args, kwargs])
