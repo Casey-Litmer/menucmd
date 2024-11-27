@@ -1,5 +1,4 @@
-from typing import Any
-from ..src.menucmd import Menu, Bind
+from ..src.builtins import *
 from macrolibs.typemacros import dict_intersect, dict_compliment
 import regex as re
 import inspect
@@ -116,7 +115,7 @@ def dict_to_obs(struct_: dict) -> MenuDict:
 
 def retrieve_globals():
     """Adds globals from where the .mcmd file is loaded."""
-    caller_globals = inspect.stack()[2].frame.f_globals
+    caller_globals = inspect.stack()[3].frame.f_globals
     globals().update(caller_globals)
 
 
