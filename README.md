@@ -19,6 +19,8 @@ inside a dedicated control flow without relying on user input.
 Other features such as lazy evaluation with the `Bind` class can also be used independently of the menu 
 interface.
 
+MenuCMD also comes with a simple domain-specific language associated with .mcmd files.
+
 
 ---
 ## Sections: 
@@ -44,25 +46,30 @@ interface.
      - `result[n]`
      - `result` attributes
      - `result.expand()`
+   - `arg_to`
+### 4. Lazy Evaluation via Bind
    - Using the `Bind` Class
    - Binding Functions and Kwargs
    - Calling a `Bind` Object
    - Note on Menu Composition
-### 4. Menu Methods
+   - `Bind().fix()`
+### 5. Menu Methods
    - `clear`
    - `delete`
    - `insert`
    - `append`
    - `ch_exit`
    - Menu Object Indexing
-### 5. Other Menu Attributes
+### 6. Other Menu Attributes
    - `Menu.kwargs`
-   - `arg_to`
    - `escape_to` and `Menu.escape`
    - `Menu.self`
    - `Menu.id`
    - Matching Keywords
-### 6. Builtins
+### 7. MCMDlang
+   - Formatting
+   - `build_menus`
+### 8. Builtins
    - In-line Functions
    - Builtin Menus
    - Dynamic Menus (WIP)
@@ -507,6 +514,60 @@ func2(*func1())
 `result[n].expand().TAG` evaluates the 
 same as `result.TAG[n].expand()` or any other permutation.
 
+---
+### 'arg_to'
+
+The `arg_to` tag accepts a function that acts on the input to a menu call, effectively serving
+as an "opening gambit" to each function chain.  This prooves to be an efficient way to serialize the first
+step in function composition for all menu options.
+
+```commandline
+#arg_to : function that takes an argument on menu call and returns result[0] to be used
+          as the first value the function chain.
+```
+
+For example, taking the square of the menu input and adding some number:
+
+```commandline
+square_number = lambda x: x**2
+
+menu = Menu(arg_to = square_number)
+
+menu.append(
+    ("1", "add 1", (
+        lambda x: x + 1, result,         #result[-1] = result[0] (post arg_to)
+        print, result
+    )),
+    ("2", "double", (
+        lambda x: x * 2, result,         #||
+        print, result
+    ))
+)
+
+menu(2)                #run menu with argument '2'
+```
+
+yields:
+
+```commandline
+Choose Action
+[1]- add 1
+[2]- add 2
+[e]- exit
+1
+5
+
+Choose Action
+[1]- add 1
+[2]- add 2
+[e]- exit
+2
+8
+```
+
+---
+4). Lazy Evaluation via Bind
+-
 -------
 ### Using the Bind Class
 
@@ -612,7 +673,7 @@ B(func, *args1, **kwargs1)(*args2, **kwargs2)  ->  func(*args1, *args2, **kwargs
 `Menu` objects accept one argument on call which is passed to `result[0]`* in the function chain. Since 
 menus can also call other menus, it allows them to pass information between eachother.
 
-**see `arg_to` in Section 5.*
+**see `arg_to` in Section 3.*
 
 For example, you can call a new menu with the previous `result` in a chain:
 ```commandline
@@ -635,14 +696,41 @@ menuB = Menu(end_to = B(menuA, arg))
 ```
 This will overwrite the default behaviour of evaluating `end_to` with `result[0]`.
 
-This is especially useful if any of the `{}_to` functions are not `Menu` objects, but
+This is especially useful if any of the `*_to` functions are not `Menu` objects, but
 functions that trigger a different part of a program.
 
 **In future updates I might add more monadic behaviours to menu composition but this seems 
 to be sufficient for now.*
 
+---
+### 'Bind().fix()'
+The `fix` method toggles the `Bind` object's currying behaviour if you don't want it accumulating additional
+arguments.
 
-4). Menu Methods
+This is primarily used when using `Bind` in `arg_to`, `end_to`, and `exit_to` with ad-hoc polymorphic functions.
+
+For example:
+```commandline
+#Print 'hi' on run
+menu = Menu(arg_to = B(print, "hi"))
+
+menu("x")  # yeilds >> "hi x"
+menu()     # yeilds >> "hi None"  (by default)
+```
+This is because `print` is a polymorphic function, and the argument passed to the menu call
+will append to the arguments in `Bind`.
+
+The solution:
+```commandline
+menu = Menu(arg_to = B(print, "hi").fix()) 
+
+menu("x")  # yeilds >> "hi"
+menu()     # yeilds >> "hi" 
+```
+This will prevent the menu argument from being passed to any function `f(*args)`.
+
+---
+5). Menu Methods
 -
 ---
 ### clear()
@@ -699,7 +787,7 @@ Returns a *menu item* for a single index. \
 Returns a *new menu* with new item list when sliced.
 
 ---
-5). Other Menu Attributes
+6). Other Menu Attributes
 -
 -----
 ### Menu.kwargs
@@ -728,57 +816,6 @@ menu1.append(
 ```
 Both will evaluate to the same.  If you do not wrap a dictionary with `kwargs`, it will be 
 interpreted as an argument.
-
----
-### 'arg_to'
-
-The `arg_to` tag accepts a function that acts on the input to a menu call, effectively serving
-as an "opening gambit" to each function chain.  This prooves to be an efficient way to serialize the first
-step in function composition for all menu options.
-
-```commandline
-#arg_to : function that takes an argument on menu call and returns result[0] to be used
-          as the first value the function chain.
-```
-
-For example, taking the square of the menu input and adding some number:
-
-```commandline
-square_number = lambda x: x**2
-
-menu = Menu(arg_to = square_number)
-
-menu.append(
-    ("1", "add 1", (
-        lambda x: x + 1, result,         #result[-1] = result[0] (post arg_to)
-        print, result
-    )),
-    ("2", "double", (
-        lambda x: x * 2, result,         #||
-        print, result
-    ))
-)
-
-menu(2)                #run menu with argument '2'
-```
-
-yields:
-
-```commandline
-Choose Action
-[1]- add 1
-[2]- add 2
-[e]- exit
-1
-5
-
-Choose Action
-[1]- add 1
-[2]- add 2
-[e]- exit
-2
-8
-```
 
 
 ---
@@ -901,7 +938,88 @@ Menu.exit_to     Menu.end_to
 Matching keywords serve as a nifty way to serialize `Menu` parameters.
 
 ---
-6). Builtins
+7). MCMDlang
+-
+------
+MenuCMD also comes with a simple dsl that abstracts away the menu creation process in `main()`.  While it 
+cannot create dynamic menus, it can access any function that does using the python method of appending items.
+
+---
+
+### Formatting:
+- Indents need not be proper tabs, as long as they are four spaces.
+- Attributes are never strings.  Quotes will always be taken as literals.
+- Comments are one line only!  They will not be removed at the end of a line.
+- Blank lines do not matter.
+
+
+Example .mcmd file:
+```commandline
+### in menus.mcmd ###
+
+Menu:
+    name: Main Menu
+    id: main_menu
+    exit_key: e
+    exit_message: exit
+    
+    # <- This is a comment
+    
+    Item:            # <- This is NOT a comment!
+        key: x
+        message: Hello World!
+        func: input("your name: ")
+        func: print(B(lambda x: f"Hello {x}!", result))
+        
+    Item:
+        key: y
+        message: Go to menu2 
+        func: menu2()
+        
+Menu:
+    name: Second Menu
+    id: menu2
+    exit_to: main_menu
+    
+    Item:
+        key: z
+        message: Goodbye World!
+        func: print("Goodbye World!")
+```
+
+---
+### build_menus
+
+Then import `build_menus`, and run in `main()`:
+
+```commandline
+from menucmd.dsl.parser import build_menus
+
+def main():
+    #Build menus from mcmd
+    menus = build_menus("menus.mcmd")
+    
+    #Populate namespace 
+    main_menu = menus.main_menu
+    menu2 = menus.menu2
+    
+    #Run
+    main_menu()
+```
+
+`build_menus` will automatically import the scope from where you imported it and create pointers between menus
+extracted from the `id` field under the `Menu` declaration.  The object it returns can be hashed by ids 
+as a dictionary, or return menus from attributes: 
+
+`menus['menu_id'] = menu.menu_id`
+
+In addtion, the following shorthand refs are included in MCMDlang by default:
+- `result` = `Menu.result`
+- `B` = `Bind`
+- All builtins
+
+---
+8). Builtins
 -
 ------
 

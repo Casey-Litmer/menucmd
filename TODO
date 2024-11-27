@@ -1,6 +1,29 @@
 TODO
 
 
+
+
+#Version 1.1.0
+#-----------------
+
+* Add Sections hyperlinks in README
+
+
+X* Create dsl for menu creation
+
+* Document weird things
+  X- when menu2.exit_to = menu1, it passes the arg that menu2 is run with.
+    Xuse exit_to = Bind(menu1, x) to specify what to run it with
+
+  X- Bind appends args to its own on call so polymorphic functions like print may pick up
+    the menu argument:  arg_to = B(print, 'hey') -> print('hey', arg)
+
+    X- add Bind(...).fix() to docs
+
+
+
+#------------------
+
 X* Bind only evaluates direct nestings of itself.   for example:
 
     B(f, B(g, z), x, y) will evaluate g(z)
@@ -16,7 +39,7 @@ so...
 
 
 
-* result.expand() only allows for direct nestings!!!  Extend the scope of this notation
+x* result.expand() only allows for direct nestings!!!  Extend the scope of this notation-
 
 
 
