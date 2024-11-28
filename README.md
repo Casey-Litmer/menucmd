@@ -993,7 +993,7 @@ Menu:
 Then import `build_menus`, and run in `main()`:
 
 ```commandline
-from menucmd.dsl.parser import build_menus
+from menucmd.dsl import build_menus
 
 def main():
     #Build menus from mcmd
