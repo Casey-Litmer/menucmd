@@ -19,3 +19,4 @@ commandmenu_config.json
 setup.py
 
 notebook_test.py
+.env
