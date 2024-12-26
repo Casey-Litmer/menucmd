@@ -948,7 +948,7 @@ cannot create dynamic menus, it can access any function that does using the pyth
 
 ### Formatting:
 - Indents need not be proper tabs, as long as they are four spaces.
-- Attributes are never strings.  Quotes will always be taken as literals.
+- Menu id, function references, and function calls are written without quotes.
 - Comments are one line only!  They will not be removed at the end of a line.
 - Blank lines do not matter.
 
@@ -960,30 +960,30 @@ Example .mcmd file:
 Menu:
     name: Main Menu
     id: main_menu
-    exit_key: e
-    exit_message: exit
+    exit_key: 'e'
+    exit_message: 'exit'
     
     # <- This is a comment
     
     Item:            # <- This is NOT a comment!
-        key: x
-        message: Hello World!
+        key: 'x'
+        message: 'Hello World!'
         func: input("your name: ")
         func: print(B(lambda x: f"Hello {x}!", result))
         
     Item:
-        key: y
-        message: Go to menu2 
+        key: 'y'
+        message: 'Go to menu2' 
         func: menu2()
         
 Menu:
-    name: Second Menu
+    name: 'Second Menu'
     id: menu2
     exit_to: main_menu
     
     Item:
-        key: z
-        message: Goodbye World!
+        key: 'z'
+        message: 'Goodbye World!'
         func: print("Goodbye World!")
 ```
 
