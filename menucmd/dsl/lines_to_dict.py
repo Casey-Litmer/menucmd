@@ -63,6 +63,7 @@ def lines_to_dict(lines: list[str]) -> dict:
             split_col = re.match(split_pattern, line.strip()).groups()
             name = split_col[0].strip()
             val = split_col[1].strip()
+            val = strip_quotes(name, val)
 
             if name == "key":
                 item_key = val
@@ -76,6 +77,7 @@ def lines_to_dict(lines: list[str]) -> dict:
             split_col = re.match(split_pattern, line.strip()).groups()
             name = split_col[0].strip()
             val = split_col[1].strip()
+            val = strip_quotes(name, val)
 
             if name == "id":
                 #Set menu_id to hash menu_dict in struct_
@@ -85,3 +87,24 @@ def lines_to_dict(lines: list[str]) -> dict:
                 menu_dict[name] = val
 
     return struct_
+
+
+def strip_quotes(key: str, val: str) -> str:
+    """
+    Enforces using single or double quotes for representing string values.
+    """
+
+    #manage the set of attribute keys NOT to enforce quotes here
+    unquoted_keys = {'id', 'exit_to', 'end_to', 'arg_to', 'escape_to', 'func'}
+
+    if key not in unquoted_keys:
+        if val[0] != val[-1] or val[0] not in ('"', "'"):
+            raise TypeError(
+                "Value {" + val + "} must be a valid string."
+                f"Try \"{val}\""
+            )
+        
+        return val[1:-1]
+    
+    else:
+        return val
