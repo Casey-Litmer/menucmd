@@ -1,6 +1,5 @@
 from ..src.builtins import *
 from macrolibs.typemacros import dict_intersect, dict_compliment
-import regex as re
 import inspect
 from .lines_to_dict import lines_to_dict
 
@@ -107,8 +106,9 @@ def dict_to_obs(struct_: dict) -> MenuDict:
                 #Adds the rest: arg_to, exit_to, etc
                 setattr(menu, name, eval(attr))
 
-        #finally, update the exit item
+        #finally, update the exit item and apply matching keywords
         menu.ch_exit()
+        menu.apply_matching_keywords()
 
     return menus
 
@@ -145,19 +145,28 @@ def append_menu_items(items: list[str], menu: Menu):
     menu.append(*literal_items)
 
 
-def parse_funcargs(funcargs: str) -> tuple[Any, tuple[Any]]:
+def parse_funcargs(funcargs: str) -> tuple[Any, tuple]:
     """
-    "func(arg1, arg2,...)" -> (func, (arg1, arg2))
+        "func(arg1, arg2,...)" -> (func, (arg1, arg2))
     """
-    func = eval(funcargs.split('(')[0])
+    #Extract function.  Works with (lambda:(...))!
+    func_args_split = funcargs.split('(')
+    func = None
+    args = ()
+    n_closed_par = 0
 
-    pattern = r"\((?:(?>[^()]*)|(?R))*\)"
-    match = re.search(pattern, funcargs)
+    try:
+        for n, x in enumerate(func_args_split[::-1]):
+            n_closed_par += x.count(')')
+            if n_closed_par == n+1:
+                func = eval("(".join(func_args_split[:-n-1]))
+                args = eval("(" + "(".join(func_args_split[-n-1:]))
+                break
 
-    if match:
-        args = eval(match.group())
-    else:
-        args = ()
+        if not func:
+            raise SyntaxError
+
+    except SyntaxError as e:
+        raise SyntaxError(f"Unbalanced parenthesis in '{funcargs}'") from e
 
     return (func, args)
-

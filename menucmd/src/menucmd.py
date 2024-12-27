@@ -73,13 +73,10 @@ class Menu():
         #Replace self references in arg_to if it is a Bind.Wrapper object
         self.arg_to = replace_value_nested(tupler(arg_to), Menu.self, self)[0]
 
-        #Break point matching heirarchy
-        self.end_to = self if end_to is None else \
-            (self.exit_to if end_to is Menu.exit_to else end_to)
-
-        self.escape_to = self if escape_to is None else \
-            (self.exit_to if escape_to is Menu.exit_to else
-             (self.end_to if escape_to is Menu.end_to else escape_to))
+        #Define breakpoints and then switch out matching keywords (if any)
+        self.end_to = self if end_to is None else end_to
+        self.escape_to = self if escape_to is None else escape_to
+        self.apply_matching_keywords()
 
         #Init menu data
         self.menu_item_list = []         #de jure list of items
@@ -290,6 +287,13 @@ class Menu():
 
         self.exit = (self.exit_key, self.exit_message, (self.exit_to, ())) #will attempt to fill in argument with arg
         self.append()
+
+
+    def apply_matching_keywords(self):
+        """Apply matching keywords for end_to and escape_to in order"""
+        self.end_to = self.exit_to if self.end_to is Menu.exit_to else self.end_to
+        self.escape_to = self.exit_to if self.escape_to is Menu.exit_to else self.escape_to
+        self.escape_to = self.end_to if self.escape_to is Menu.end_to else self.escape_to
 
 
 #----------------------------------------------------------------------------------------------------------------------
