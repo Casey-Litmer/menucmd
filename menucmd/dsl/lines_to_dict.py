@@ -38,7 +38,7 @@ def lines_to_dict(lines: list[str]) -> dict:
             if not menu_id:
                 raise AttributeError("Missing Menu 'id' field in {file}")
 
-            struct_[menu_id] = menu_dict | {"Items":item_list}
+            struct_[menu_id] = menu_dict | {"Items":list(reversed(item_list))} #Reverse this so the Items show up in order!
 
             #Reset Tracked Structures
             menu_id = ''
