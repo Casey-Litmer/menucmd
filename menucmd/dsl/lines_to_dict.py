@@ -103,7 +103,7 @@ def strip_quotes(key: str, val: str) -> str:
                 "Value {" + val + "} must be a valid string."
                 f"Try \"{val}\""
             )
-        
+
         return val[1:-1]
     
     else:

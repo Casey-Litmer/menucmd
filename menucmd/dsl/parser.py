@@ -63,7 +63,7 @@ def dict_to_obs(struct_: dict) -> MenuDict:
     menus = []
 
     #blank dict with only static attribute names
-    static_attrs = {
+    STATIC_ATTRS = {
         "ID": '',
         "name": '',
         "empty_message": '',
@@ -74,7 +74,7 @@ def dict_to_obs(struct_: dict) -> MenuDict:
     #Initlialize all menus with only static attributes to a dict indexed by 'ID'
     for menu_id, attrs in struct_.items():
         #compare all attributes defined in dsl script, and only feed into Menu if it intersects with the blank dict
-        static_attrs = dict_intersect(attrs, static_attrs)
+        static_attrs = dict_intersect(attrs, STATIC_ATTRS)
 
         #Create Menu
         menu = Menu(**static_attrs)
