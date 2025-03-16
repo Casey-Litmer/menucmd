@@ -11,7 +11,7 @@ def escape_on(x, value):
     return Menu.escape if x == value else x
 
 
-def f_escape(*args, **kwargs) -> Menu.escape:
+def f_escape(*args, **kwargs) -> object:
     """Polymorphic in-line escape function."""   #terminal morphism in Hom(*,escape)
     return Menu.escape
 
@@ -88,6 +88,15 @@ def choose_items(entries: list | tuple | dict | set, display_as = lambda x:x, **
     """Pick and return mutiple elements from a list/tuple/dict/set."""
     return type_compliment(entries, edit_list(entries, display_as = display_as, **kwargs))
 
+
+def info_box(title: str = "Info", message: str = "Ok", **kwargs) -> None | Any:   #TODO: add to docs.  Also make standard system for keyword args in theses systems (and standardized docstrings)
+    """Display a message with a title.  
+    Default menu kwargs overwrite (name = 'title') and (exit_message = 'message').  
+    Returns None."""
+    kwargs_ = {"name": title, "exit_message": message} | kwargs | {"exit_to":lambda: None, "exit_on_empty": False}
+    menu = Menu(**kwargs_)
+
+    return menu()
 
 #----------------------------------------------------------------------------------------------------------------------
 #Dynamic Menus

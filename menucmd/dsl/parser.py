@@ -95,7 +95,7 @@ def dict_to_obs(struct_: dict) -> MenuDict:
     #Set all non-static attributes and convert 'ID' references to pointers
     for menu_id, menu, attrs in zip(menus.keys(), menus.values(), struct_.values()):
         #Get all remaining attributes
-        active_attributes = dict_compliment(attrs, static_attrs)
+        active_attributes = dict_compliment(attrs, STATIC_ATTRS)
 
         for name, attr in active_attributes.items():
             if name == "Items":
@@ -163,10 +163,10 @@ def parse_funcargs(funcargs: str) -> tuple[Any, tuple]:
                 args = eval("(" + "(".join(func_args_split[-n-1:]))
                 break
 
-        if not func:
-            raise SyntaxError
-
     except SyntaxError as e:
-        raise SyntaxError(f"Unbalanced parenthesis in '{funcargs}'") from e
+        raise SyntaxError(funcargs) from e
+
+    except NameError as e:
+        raise NameError(str(e)) from e  #TODO Add note about definitions not being picked up from within functions like 'main'
 
     return (func, args)

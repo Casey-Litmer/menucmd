@@ -1,38 +1,9 @@
-from macrolibs.typemacros import tupler, dict_union, list_union, tuple_union
+from macrolibs.typemacros import tupler, dict_union, list_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, copy_type, maybe_type
 from copy import copy
+from .bind import Bind
+from .result import Result
 
-
-#----------------------------------------------------------------------------------------------------------------------
-#Result Type
-
-class Result():
-    def __init__(self, n: int):
-        self.__n__ = n
-        self.__attr__ = None
-
-    def __getitem__(self, n: int):
-        return type(self)(n).__getattr__(self.__attr__)
-
-    def __repr__(self):
-        return f"<class Result[{self.__n__}]>"
-
-    def __eq__(self, other):
-        """Compare by attribute if both self and other have attributes"""
-        if self.__attr__ is not None and hasattr(other, "__attr__") and other.__attr__ is not None:
-            return type(self) == type(other) and self.__attr__ == other.__attr__
-        else:
-            return type(self) == type(other) and self.__n__ == other.__n__
-
-    def expand(self):
-        """Type to replace and expand in place.   *result <=> result.expand()"""
-        return copy_type(type(self), "expand")(self.__n__).__getattr__(self.__attr__)
-
-    def __getattr__(self, tag):
-        """Index by attribute first.  If no attribute, index by index"""
-        new_result = type(self)(self.__n__)
-        new_result.__attr__ = tag
-        return new_result
 
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -63,11 +34,13 @@ class Menu():
                  arg_to = lambda x:x,
                  exit_key = "e",
                  exit_message = "exit",
-                 empty_message = "--*No Entries*--"
+                 empty_message = "--*No Entries*--",
+                 exit_on_empty = True                  #TODO: ADD TO DOCS
                  ):
         #Pass parameters
         self.name = name
         self.empty_message = empty_message
+        self.exit_on_empty = exit_on_empty
         self.exit_to, self.exit_key, self.exit_message = exit_to, exit_key, exit_message
 
         #Replace self references in arg_to if it is a Bind.Wrapper object
@@ -106,7 +79,7 @@ class Menu():
         results = [result]
 
         #List state logic
-        if not self.menu_display_list[:-1]:
+        if not self.menu_display_list[:-1] and self.exit_on_empty:
             #Exit on empty menu
             print(self.empty_message)
             selection = self.exit_key
@@ -295,70 +268,3 @@ class Menu():
         self.escape_to = self.exit_to if self.escape_to is Menu.exit_to else self.escape_to
         self.escape_to = self.end_to if self.escape_to is Menu.end_to else self.escape_to
 
-
-#----------------------------------------------------------------------------------------------------------------------
-#Lazy Evaluation
-
-class Bind():
-    """
-    Used for delayed evaluation.
-    Creates a callable list of function / argument pairs in the form:
-    [<function>, (args), {kwargs}]  ->  function(*args, **kwargs)
-
-    - Calling a Bind object with additional args/kwargs will append (curry) them to its initial args/kwargs.
-
-      Bind(func, args1, kwargs1)(args2, kwargs2) -> func(*args1, *args2, **kwargs1, **kwargs2)
-
-    - Use Bind(func, *args, **kwargs).fix() to toggle currying.
-    """
-    class Wrapper(list):
-        def __init__(self, data = ()):
-            super().__init__(data)
-            self.fixed = False
-
-        def __call__(self, *args, **kwargs):
-            if self.fixed:
-                return Bind.lazy_eval(self[0], self[1], self[2])
-            else:
-                return Bind.lazy_eval(self[0], self[1] + args, self[2] | kwargs)
-
-        def fix(self):
-            self.fixed = not self.fixed
-            return self
-
-    def __new__(cls, func, *args, **kwargs) -> Wrapper:
-        return cls.Wrapper([func, args, kwargs])
-
-
-    @staticmethod
-    def lazy_eval(func, args = (), kwargs = {}):
-        """Depth-first evaluation of nested function/argument bindings."""
-        func = func() if isinstance(func, Bind.Wrapper) else func
-        args = tupler(arg() if isinstance(arg, Bind.Wrapper) else arg for arg in tupler(args))
-        kwargs = {k: v() if isinstance(v, Bind.Wrapper) else v for k, v in kwargs.items()}
-
-        return func(*args, **kwargs)
-
-"""""
-Do this to evaluate Binds recursively through ALL data structures, not just immediate Bind nestings.
-This might not be the best usage because the user cannot use Bind objects in a data structure without evaluating
-everything at the same time.  Adding a keyword argument to change the desired behaviour might be the right course
-but for menucmd, it does not matter.
-
-    
-    def lazy_eval(func, args = (), kwargs = {}):
-        func = func() if isinstance(func, Bind.Wrapper) else func
-
-        def r_eval(data):
-            if isinstance(data, Bind.Wrapper):
-                return data()
-            elif isinstance(data, list | tuple):
-                return type(data)(r_eval(x) for x in data)
-            else:
-                return data
-
-        args = tupler(r_eval(arg) for arg in tupler(args))
-        kwargs = {k:r_eval(v) for k, v in kwargs.items()}
-    
-        return func(*args, **kwargs)
-"""""
