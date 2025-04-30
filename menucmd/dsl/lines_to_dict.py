@@ -90,10 +90,7 @@ def lines_to_dict(lines: list[str]) -> dict:
 
 
 def strip_quotes(key: str, val: str) -> str:
-    """
-    Enforces using single or double quotes for representing string values.
-    """
-
+    """Enforces using single or double quotes for representing string values."""
     #manage the set of attribute keys NOT to enforce quotes here
     unquoted_keys = {'id', 'exit_to', 'end_to', 'arg_to', 'escape_to', 'func'}
 
@@ -103,8 +100,6 @@ def strip_quotes(key: str, val: str) -> str:
                 "Value {" + val + "} must be a valid string."
                 f"Try \"{val}\""
             )
-
         return val[1:-1]
-    
     else:
         return val

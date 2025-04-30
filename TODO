@@ -6,6 +6,10 @@ TODO
 #Version 1.1.0
 #-----------------
 
+* Update to newest macrolibs to fix some bugs
+
+* TRAMPOLINE
+
 * Add Sections hyperlinks in README
 
 

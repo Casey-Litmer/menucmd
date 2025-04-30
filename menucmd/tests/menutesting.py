@@ -1,5 +1,6 @@
-from menucmd import *
-from menucmd import Bind as B
+from src.menucmd import *
+from src.menucmd import Bind as B
+from src.builtins import *
 #from notebook_test import M0
 import numpy as np
 
