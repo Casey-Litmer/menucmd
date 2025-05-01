@@ -18,7 +18,6 @@ def lines_to_dict(lines: list[str]) -> dict:
     """
     #Remove empty lines and comments and get list
     lines  = [line for line in lines if line.strip() and not line.strip()[:1] == '#']
-
     struct_ = {}
     menu_id = ''
     menu_dict = {}
@@ -32,12 +31,11 @@ def lines_to_dict(lines: list[str]) -> dict:
 
     #Iterate in reverse so "Menu:" and "Item:" compile aggregated data
     for line in reversed(lines):
-
         #Add menu to struct_
         if line.strip() == "Menu:":
             if not menu_id:
                 raise AttributeError("Missing Menu 'id' field in {file}")
-
+            
             struct_[menu_id] = menu_dict | {"Items":list(reversed(item_list))} #Reverse this so the Items show up in order!
 
             #Reset Tracked Structures
@@ -53,7 +51,6 @@ def lines_to_dict(lines: list[str]) -> dict:
                 raise AttributeError("Missing Item 'message' field in {file}")
 
             item_list.append([item_key, item_message] + list(reversed(func_list)))
-
             func_list = []
             item_key = ''
             item_message = ''
@@ -85,7 +82,7 @@ def lines_to_dict(lines: list[str]) -> dict:
             else:
                 #Otherwise, set the attribute
                 menu_dict[name] = val
-
+                
     return struct_
 
 
@@ -97,7 +94,7 @@ def strip_quotes(key: str, val: str) -> str:
     if key not in unquoted_keys:
         if val[0] != val[-1] or val[0] not in ('"', "'"):
             raise TypeError(
-                "Value {" + val + "} must be a valid string."
+                "Value {" + val + "} must be a valid string.",
                 f"Try \"{val}\""
             )
         return val[1:-1]

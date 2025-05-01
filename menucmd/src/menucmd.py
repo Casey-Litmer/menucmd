@@ -1,14 +1,10 @@
-from macrolibs.typemacros import tupler, dict_union, list_union
+from macrolibs.typemacros import tupler, dict_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, copy_type, maybe_type
 from copy import copy
-import os, sys
+import sys
 from .bind import Bind
 from .result import Result
 
-
-ESC = "\x1b"
-CLEAR_LINE = f"{ESC}[2K"
-MOVE_UP = lambda n: f"{ESC}[{n}A"
 
 
 #==================================================================================
@@ -95,12 +91,9 @@ class Menu():
             print(show, end='')
             printed_lines = show.count('\n') + 1
             selection = input() 
-
+            
             #Clear previous menu
-            for _ in range(printed_lines):
-                sys.stdout.write(MOVE_UP(1))
-                sys.stdout.write(CLEAR_LINE)
-            sys.stdout.flush()
+            Menu.clear_lines(printed_lines)
 
         #Refresh Menu On Invalid Input
         if selection not in self.menu.keys():
@@ -266,3 +259,11 @@ class Menu():
         self.end_to = self.exit_to if self.end_to is Menu.exit_to else self.end_to
         self.escape_to = self.exit_to if self.escape_to is Menu.exit_to else self.escape_to
         self.escape_to = self.end_to if self.escape_to is Menu.end_to else self.escape_to
+
+    @staticmethod
+    def clear_lines(printed_lines: int) -> None:
+        """Clears previous menu from terminal"""
+        for _ in range(printed_lines):
+            sys.stdout.write("\x1b[1A")  #Move cursor up
+            sys.stdout.write("\x1b[2K")  #Clear line
+        sys.stdout.flush()

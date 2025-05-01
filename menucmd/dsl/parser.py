@@ -8,7 +8,7 @@ from .lines_to_dict import lines_to_dict
 result = Menu.result
 B = Bind
 
-
+#==================================================================================
 #Output type
 class MenuDict(dict):
     """
@@ -34,11 +34,9 @@ class MenuDict(dict):
     def items(self):
         return self.menus.items()
 
-#-----------------------------------------------------------------------------------
-
+#==================================================================================
 def build_menus(file: str) -> MenuDict:
     """Convert .mcmd file to attributable dict of menus"""
-
     #Get text
     with open(file) as f:
         lines = f.readlines()
@@ -51,8 +49,7 @@ def build_menus(file: str) -> MenuDict:
 
     return menus
 
-#------------------------------------------------------------------------------------
-
+#==================================================================================
 def dict_to_obs(struct_: dict) -> MenuDict:
     """
     Converts the dictionary structure to a MenuDict object.
@@ -62,7 +59,7 @@ def dict_to_obs(struct_: dict) -> MenuDict:
     """
     menus = []
 
-    #blank dict with only static attribute names
+    #Blank dict with only static attribute names
     STATIC_ATTRS = {
         "ID": '',
         "name": '',
@@ -75,15 +72,9 @@ def dict_to_obs(struct_: dict) -> MenuDict:
     for menu_id, attrs in struct_.items():
         #compare all attributes defined in dsl script, and only feed into Menu if it intersects with the blank dict
         static_attrs = dict_intersect(attrs, STATIC_ATTRS)
-
-        #Create Menu
-        menu = Menu(**static_attrs)
-
-        #Add id
-        setattr(menu, "ID", menu_id)
-
-        #Add to list
-        menus.append(menu)
+        menu = Menu(**static_attrs)                         #Create Menu
+        setattr(menu, "ID", menu_id)                        #Add id
+        menus.append(menu)                                  #Add to list
 
     #Convert list to attributable dict:  {menu_id: Menu}
     menus = MenuDict(menus)
@@ -101,18 +92,17 @@ def dict_to_obs(struct_: dict) -> MenuDict:
             if name == "Items":
                 #attr = (['key', 'message', "func1(*args)", "func2(*args),..."],...)
                 append_menu_items(attr, menu)
-
             else:
                 #Adds the rest: arg_to, exit_to, etc
                 setattr(menu, name, eval(attr))
 
-        #finally, update the exit item and apply matching keywords
+        #Finally, update the exit item and apply matching keywords
         menu.ch_exit()
         menu.apply_matching_keywords()
 
     return menus
 
-
+#==================================================================================
 def retrieve_globals():
     """Adds globals from where the .mcmd file is loaded."""
     caller_globals = inspect.stack()[3].frame.f_globals
@@ -124,7 +114,7 @@ def cannonize_menu_ids(menus: MenuDict):
     for menu_id, menu in menus.items():
         globals()[menu_id] = menu
 
-
+#==================================================================================
 def append_menu_items(items: list[str], menu: Menu):
     """
     Converts "Items" list into menucmd format and appends to menu.
