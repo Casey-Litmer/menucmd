@@ -1,4 +1,4 @@
-from macrolibs.typemacros import tupler
+from macrolibs.typemacros import tupler;
 
 #==================================================================================
 #Lazy Evaluation
@@ -15,33 +15,36 @@ class Bind():
 
     - Use Bind(func, *args, **kwargs).fix() to toggle currying.
     """
-
     class Wrapper(list):
         def __init__(self, data=()):
-            super().__init__(data)
-            self.fixed = False
+            super().__init__(data);
+            self.fixed = False;
 
         def __call__(self, *args, **kwargs):
             if self.fixed:
-                return Bind.lazy_eval(self[0], self[1], self[2])
+                return Bind.lazy_eval(self[0], self[1], self[2]);
             else:
-                return Bind.lazy_eval(self[0], self[1] + args, self[2] | kwargs)
+                return Bind.lazy_eval(self[0], self[1] + args, self[2] | kwargs);
 
         def fix(self):
-            self.fixed = not self.fixed
-            return self
+            self.fixed = not self.fixed;
+            return self;
 
     def __new__(cls, func, *args, **kwargs) -> Wrapper:
-        return cls.Wrapper([func, args, kwargs])
+        return cls.Wrapper([func, args, kwargs]);
 
     @staticmethod
     def lazy_eval(func, args=(), kwargs={}):
         """Depth-first evaluation of nested function/argument bindings."""
-        func = func() if isinstance(func, Bind.Wrapper) else func
-        args = tupler(arg() if isinstance(arg, Bind.Wrapper) else arg for arg in tupler(args))
-        kwargs = {k: v() if isinstance(v, Bind.Wrapper) else v for k, v in kwargs.items()}
-
-        return func(*args, **kwargs)
+        func = func() if isinstance(func, Bind.Wrapper) else func;
+        args = tupler(arg() if isinstance(arg, Bind.Wrapper) else arg for arg in tupler(args));
+        kwargs = {k: v() if isinstance(v, Bind.Wrapper) else v for k, v in kwargs.items()};
+        try:
+            return func(*args, **kwargs);
+        except TypeError as e:
+            print(e);
+            print(func, args, kwargs);
+            #raise e
 
 
 """""

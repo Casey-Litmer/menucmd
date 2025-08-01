@@ -14,19 +14,22 @@ def main():
     lazy_menu = Menu(name = "Lazy Eval", exit_to = main_menu)
     builtin_menu = Menu(name = "Builtins", exit_to = main_menu)
     dynamic_menu = Menu(name = "Dynamic Menus", exit_to = main_menu)
+    trampoline_menu = Menu(name = "Trampoline", exit_to = main_menu)
 
     menu_A = Menu(name="Menu_A", exit_to = lazy_menu, end_to = Menu.exit_to)
     menu_B = Menu(name="Menu_B", exit_to = dynamic_menu, escape_to = Menu.exit_to)
 
     main_menu.append(
-        ("e", "Test Lazy Eval", (lazy_menu, (),)),
-        ("b", "Test Builtins", (builtin_menu, (),)),
+        ("e", "Test Lazy Eval", (lazy_menu, ('lazy'),)),
+        ("b", "Test Builtins", (builtin_menu, ('builtins'),)),
         ("d", "Test Dynamic Menus", (dynamic_menu, (),)),
+        ("t", "Test Trampoline", (trampoline_menu, (),)),
     )
 #
     lazy_menu.append(
         ("s", "Square Number", (
             input, ("Number: "),
+            #print, ('INPUTTED NUMBER', result),
             lambda x: x**2, B(float, result),
             print, (result),
         )),
@@ -47,7 +50,7 @@ def main():
         )),
 
         ("i", "iterator test", (
-            input, "list (separated by spaces)", tuple, B(lambda x:x.split(), result),
+            input, "3 items (separated by spaces)", tuple, B(lambda x:x.split(), result),
             print, ("result call: ", result.expand()),
             print, B(lambda x, y, z: x+y+z, result[-2].expand()),
         )),
@@ -59,7 +62,7 @@ def main():
             tuple, ((result.INT1, result.INT2),),
             print, ("expanded ", result[-1].EXP.expand()),
             print, ("expanded (tagged)", result.EXP.expand())
-        ))
+        )),
     )
 #
     builtin_menu.append(
@@ -90,25 +93,28 @@ def main():
             menu_B, result,
         )),
 
-        ("s", "Menu.self usage: insert new item here", (
+        ("s", "Menu.self usage: inseert new item here", (
             Menu.insert, (Menu.self, 0, ("*", "Nice Job!", (main_menu, "*"))),
         ))
+    )
 
-        #("d", "open this menu but with exit_to end program", (
-        #    dynamic_menu, 1
-        #))
+    exit_menu = Menu(name='dummy')
 
-        #("n", "test notebook diagram", (
-        #    M0, (0),
-        #    print, result
-        #))
+    exit_menu.exit_to = exit_menu
+    exit_menu.ch_exit()
+
+    trampoline_menu.append(
+        ("x", "Test infinite exit loop", (
+            exit_menu, ()
+        )),
     )
 
 
-#---------------------------------------------------------------------------------------------------------------------
+#==================================================================================
     menu_A.append(
         ("m", "reverse and print", (
-            lambda s: s[::-1], result, print, result
+            lambda s: s[::-1], result, 
+            print, result
         ))
     )
 #
@@ -121,10 +127,10 @@ def main():
     )
 
 
-    main_menu()
+    print(main_menu('main'));
 
 
-#---------------------------------------------------------------------------------------------------------------
+#==================================================================================
 
 def shuffle_cards() -> np.array:
     suites = np.array([x for x in range(4)])
@@ -142,7 +148,10 @@ def pick_card(n: int, deck: np.array) -> str:
     return display_number[deck[n][1]] + " of " + display_suite[deck[n][0]]
 
 
-#------------------------------------------------------------------------------------------------------------
+#==================================================================================
+
+
+#==================================================================================
 
 def get_code() -> list[str]:
     with open("menutesting.py", "r") as code:

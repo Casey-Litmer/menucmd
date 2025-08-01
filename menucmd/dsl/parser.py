@@ -1,15 +1,14 @@
-from ..src.builtins import *
-from macrolibs.typemacros import dict_intersect, dict_compliment
-import inspect
-from .lines_to_dict import lines_to_dict
+import inspect;
+from macrolibs.typemacros import dict_intersect, dict_compliment;
+from ..src.builtins import *;
+from .lines_to_dict import lines_to_dict;
 
 
-#SHORTHANDS
-result = Menu.result
-B = Bind
+# SHORTHANDS
+result = Menu.result;
 
 #==================================================================================
-#Output type
+# Output type
 class MenuDict(dict):
     """
     Dictionary of menu objects that can be additionally referenced by attributes:
@@ -17,37 +16,36 @@ class MenuDict(dict):
     """
     def __init__(self, menus: list):
         for menu in menus:
-            self.__setattr__(menu.ID, menu)
-
-        self.menus = {menu.ID:menu for menu in menus}
+            self.__setattr__(menu.ID, menu);
+        self.menus = {menu.ID:menu for menu in menus};
 
     def __getitem__(self, item):
-        return self.menus[item]
+        return self.menus[item];
     def __iter__(self):
-        return iter(self.menus)
+        return iter(self.menus);
     def __repr__(self):
         return f"<Menus {self.menus}>"
     def keys(self):
-        return self.menus.keys()
+        return self.menus.keys();
     def values(self):
-        return self.menus.values()
+        return self.menus.values();
     def items(self):
-        return self.menus.items()
+        return self.menus.items();
 
 #==================================================================================
 def build_menus(file: str) -> MenuDict:
     """Convert .mcmd file to attributable dict of menus"""
-    #Get text
+    # Get text
     with open(file) as f:
-        lines = f.readlines()
-    f.close()
+        lines = f.readlines();
+    f.close();
 
-    #Covert to dict
-    struct_ = lines_to_dict(lines)
-    #Convert to MenuDict
-    menus = dict_to_obs(struct_)
+    # Covert to dict
+    struct_ = lines_to_dict(lines);
+    # Convert to MenuDict
+    menus = dict_to_obs(struct_);
 
-    return menus
+    return menus;
 
 #==================================================================================
 def dict_to_obs(struct_: dict) -> MenuDict:
@@ -57,62 +55,62 @@ def dict_to_obs(struct_: dict) -> MenuDict:
     scope referenced by their ids, and then appends their items and '*_to' callbacks after converting
     them to literals.
     """
-    menus = []
+    menus = [];
 
-    #Blank dict with only static attribute names
+    # Blank dict with only static attribute names
     STATIC_ATTRS = {
         "ID": '',
         "name": '',
         "empty_message": '',
         "exit_message": '',
         "exit_key": ''
-    }
+    };
 
-    #Initlialize all menus with only static attributes to a dict indexed by 'ID'
+    # Initlialize all menus with only static attributes to a dict indexed by 'ID'
     for menu_id, attrs in struct_.items():
-        #compare all attributes defined in dsl script, and only feed into Menu if it intersects with the blank dict
-        static_attrs = dict_intersect(attrs, STATIC_ATTRS)
-        menu = Menu(**static_attrs)                         #Create Menu
-        setattr(menu, "ID", menu_id)                        #Add id
-        menus.append(menu)                                  #Add to list
+        # Compare all attributes defined in dsl script, and only feed into Menu if it intersects with the blank dict
+        static_attrs = dict_intersect(attrs, STATIC_ATTRS);
+        menu = Menu(**static_attrs);                         # Create Menu
+        setattr(menu, "ID", menu_id);                        # Add id
+        menus.append(menu);                                  # Add to list
 
-    #Convert list to attributable dict:  {menu_id: Menu}
-    menus = MenuDict(menus)
+    # Convert list to attributable dict:  {menu_id: Menu}
+    menus = MenuDict(menus);
 
-    #Add menu ids to global pointers and retrieve caller globals
-    cannonize_menu_ids(menus)
-    retrieve_globals()
+    # Add menu ids to global pointers and retrieve caller globals
+    cannonize_menu_ids(menus);
+    retrieve_globals();
 
-    #Set all non-static attributes and convert 'ID' references to pointers
+    # Set all non-static attributes and convert 'ID' references to pointers
     for menu_id, menu, attrs in zip(menus.keys(), menus.values(), struct_.values()):
-        #Get all remaining attributes
-        active_attributes = dict_compliment(attrs, STATIC_ATTRS)
+        # Get all remaining attributes
+        active_attributes = dict_compliment(attrs, STATIC_ATTRS);
 
         for name, attr in active_attributes.items():
             if name == "Items":
-                #attr = (['key', 'message', "func1(*args)", "func2(*args),..."],...)
-                append_menu_items(attr, menu)
+                # attr = (['key', 'message', "func1(*args)", "func2(*args),..."],...)
+                append_menu_items(attr, menu);
             else:
-                #Adds the rest: arg_to, exit_to, etc
-                setattr(menu, name, eval(attr))
+                # Adds the rest: arg_to, exit_to, etc
+                setattr(menu, name, eval(attr));
 
-        #Finally, update the exit item and apply matching keywords
-        menu.ch_exit()
-        menu.apply_matching_keywords()
+        # Finally, update the exit item and apply matching keywords
+        menu.ch_exit();
+        menu.apply_matching_keywords();
 
-    return menus
+    return menus;
 
 #==================================================================================
 def retrieve_globals():
     """Adds globals from where the .mcmd file is loaded."""
-    caller_globals = inspect.stack()[3].frame.f_globals
-    globals().update(caller_globals)
+    caller_globals = inspect.stack()[3].frame.f_globals;
+    globals().update(caller_globals);
 
 
 def cannonize_menu_ids(menus: MenuDict):
     """Adds menu to global scope"""
     for menu_id, menu in menus.items():
-        globals()[menu_id] = menu
+        globals()[menu_id] = menu;
 
 #==================================================================================
 def append_menu_items(items: list[str], menu: Menu):
@@ -121,42 +119,40 @@ def append_menu_items(items: list[str], menu: Menu):
     (['key', 'message', "func1(arg1, arg2)", "func2(arg3, arg4)",...],...)
     -> [('key', 'message', (func1, (arg1, arg2), func2, (arg3, arg4)))]
     """
-    literal_items = []
+    literal_items = [];
 
     for item in items:
-        key = item[0]; message = item[1]
-        funcs = ()
+        key = item[0]; message = item[1];
+        funcs = ();
 
         for funcargs in item[2:]:
-            funcs += parse_funcargs(funcargs)
+            funcs += parse_funcargs(funcargs);
+        
+        literal_items.append((key, message, tuple(funcs)));
 
-        literal_items.append((key, message, tuple(funcs)))
-
-    menu.append(*literal_items)
+    menu.append(*literal_items);
 
 
 def parse_funcargs(funcargs: str) -> tuple[Any, tuple]:
     """
         "func(arg1, arg2,...)" -> (func, (arg1, arg2))
     """
-    #Extract function.  Works with (lambda:(...))!
-    func_args_split = funcargs.split('(')
-    func = None
-    args = ()
-    n_closed_par = 0
+    # Extract function.  Works with (lambda:(...))!
+    func_args_split = funcargs.split('(');
+    func = None;
+    args = ();
+    n_closed_par = 0;
 
     try:
         for n, x in enumerate(func_args_split[::-1]):
-            n_closed_par += x.count(')')
+            n_closed_par += x.count(')');
             if n_closed_par == n+1:
-                func = eval("(".join(func_args_split[:-n-1]))
-                args = eval("(" + "(".join(func_args_split[-n-1:]))
-                break
-
+                func = eval("(".join(func_args_split[:-n-1]));
+                args = eval("(" + "(".join(func_args_split[-n-1:]));
+                break;
     except SyntaxError as e:
-        raise SyntaxError(funcargs) from e
-
+        raise SyntaxError(funcargs) from e;
     except NameError as e:
-        raise NameError(str(e)) from e  #TODO Add note about definitions not being picked up from within functions like 'main'
+        raise NameError(str(e)) from e;  # TODO Add note about definitions not being picked up from within functions like 'main'
 
-    return (func, args)
+    return (func, args);

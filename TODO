@@ -2,70 +2,71 @@ TODO
 
 
 
-
 #Version 1.1.0
 #-----------------
 
-* Update to newest macrolibs to fix some bugs
+* Update to newest macrolibs to fix some bugs (WIP)
 
-* TRAMPOLINE
+* ~~TRAMPOLINE~~
 
 * Add Sections hyperlinks in README
 
+* LIMITATION: menus cannot be used in functions.  Instead, a function must take the result of a menu inside a chain
+  because a menu may return MenuManager.__null__.
+  This is a limitation I am ok with, it just needs to be documented.
 
-X* Create dsl for menu creation
+* ~~Create dsl for menu creation~~
 
 * Document weird things
-  X- when menu2.exit_to = menu1, it passes the arg that menu2 is run with.
-    Xuse exit_to = Bind(menu1, x) to specify what to run it with
+  - ~~when menu2.exit_to = menu1, it passes the arg that menu2 is run with.~~
+  - ~~use exit_to = Bind(menu1, x) to specify what to run it with~~
 
-  X- Bind appends args to its own on call so polymorphic functions like print may pick up
-    the menu argument:  arg_to = B(print, 'hey') -> print('hey', arg)
+  - ~~Bind appends args to its own on call so polymorphic functions like print may pick up
+    the menu argument:  arg_to = B(print, 'hey') -> print('hey', arg)~~
 
-    X- add Bind(...).fix() to docs
+    - ~~add Bind(...).fix() to docs~~
 
 
 
 #------------------
 
-X* Bind only evaluates direct nestings of itself.   for example:
+* ~~Bind only evaluates direct nestings of itself.   for example:~~
 
-    B(f, B(g, z), x, y) will evaluate g(z)
-but B(f', [B(g,z), x], y) will not!
+    ~~B(f, B(g, z), x, y) will evaluate g(z)
+but B(f', [B(g,z), x], y) will not!~~
 
 (both domains of f and f' are isomorphic)
 so...
-  is this something that needs to be changed for sake of completeness?  or just let it be?
+  is this something that needs to be changed for sake of completeness?  or just let it be
 
-    X Added a comment about it.  It doesn't make sense for menucmd, but in future lazy eval programs it might...
-      (Consider adding to macrolibs)
-
-
-
-
-x* result.expand() only allows for direct nestings!!!  Extend the scope of this notation-
+Added a comment about it.  It doesn't make sense for menucmd, but in future lazy eval programs it might...
+(Consider adding to macrolibs)
 
 
 
+* ~~result.expand() only allows for direct nestings!!!  Extend the scope of this notation-~~
 
-x* end_to now has access to results and thus supports Bind.  Does that mean default eval with arg = result[0] is obsolete?
+
+
+
+* ~~end_to now has access to results and thus supports Bind.  Does that mean default eval with arg = result[0] is obsolete?
   Does it make sense with excepting None returns in general?
-  Does it make sense with escape_to?  exit_to?
+  Does it make sense with escape_to?  exit_to?~~
 
   Eh, not really for now.  Might come back to this.
 
 
-X* Update docs on all new stuff
+* ~~Update docs on all new stuff~~
 
 
 
- X* Upload newest version using PyTools4Windows
+ * ~~Upload newest version using PyTools4Windows~~
 
      On 'pre-release'
 
 
 
-X* Added choose_item:: list x tuple x dict x set -> Any
+* ~~Added choose_item:: list x tuple x dict x set -> Any~~
 
   How to extend edit_list to -> dict x set ?
 

@@ -1,37 +1,37 @@
-from macrolibs.typemacros import copy_type
-from types import FunctionType
+from macrolibs.typemacros import copy_type;
 
 
 #==================================================================================
 #Result Type
 
 class Result():
-    def __init__(self, n: int):
-        self.__n__ = n
-        self.__attr__ = None
+    def __init__(self, n: int, expanded = False):
+        self.__n__ = n;
+        self.__attr__ = None;
 
     def __getitem__(self, n: int):
-        return type(self)(n).__getattr__(self.__attr__)
+        return type(self)(n).__getattr__(self.__attr__);
 
     def __repr__(self):
-        return f"<class Result[{self.__n__}]>"
+        return f"<class Result[{self.__n__}]>";
 
     def __eq__(self, other):
         """Compare by attribute if both self and other have attributes"""
         if self.__attr__ is not None and hasattr(other, "__attr__") and other.__attr__ is not None:
-            return type(self) == type(other) and self.__attr__ == other.__attr__
+            return type(self) == type(other) and self.__attr__ == other.__attr__;
         else:
-            return type(self) == type(other) and self.__n__ == other.__n__
+            return type(self) == type(other) and self.__n__ == other.__n__;
 
     def expand(self):
         """Type to replace and expand in place.   *result <=> result.expand()"""
-        return copy_type(type(self), "expand")(self.__n__).__getattr__(self.__attr__)
+        return copy_type(type(self), "expand", {'__repr__': self.__repr__})(self.__n__).__getattr__(self.__attr__);
+        #return type(self)(self.__n__, expanded = True).__getattr__(self.__attr__)
 
     def __getattr__(self, tag):
         """Index by attribute first.  If no attribute, index by index"""
-        new_result = type(self)(self.__n__)
-        new_result.__attr__ = tag
-        return new_result
+        new_result = type(self)(self.__n__);
+        new_result.__attr__ = tag;
+        return new_result;
 
 
 
