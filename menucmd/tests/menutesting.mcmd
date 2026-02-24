@@ -1,0 +1,131 @@
+
+
+Menu:
+    name: "Hub"
+    id: main_menu
+    exit_key: "x"
+
+    Item:
+        key: "e"
+        message: "Test Lazy Eval"
+        func: lazy_menu()
+    Item:
+        key: "b"
+        message: "Test Builtins"
+        func: builtin_menu()
+    Item:
+        key: "d"
+        message: "Test Dynamic Menus"
+        func: dynamic_menu()
+
+Menu:
+    name: "Lazy Eval"
+    id: lazy_menu
+    exit_to: main_menu
+
+    Item:
+        key: "s"
+        message: "Square Number"
+        func: input("Number: ")
+        func: B(lambda x: float(x) ** 2, result)
+        func: print(result)
+    Item:
+        key: "c"
+        message: "Shuffle Cards"
+        func: shuffle_cards()
+        func: pick_card(B(int,B(input, "Choose Card (0-51): ")), result)
+        func: print(result)
+    Item:
+        key: "m"
+        message: "Menu Composition"
+        func: input("string for menu_A: ")
+        func: menu_A(result)
+    Item:
+        key: "i"
+        message: "Iterator Test"
+        func: input("list of 3 (separated by spaces): ")
+        func: tuple(B(lambda x: x.split(), result))
+        func: print("result call: ", result.expand())
+        func: print(B(lambda x, y, z: x+y+z, result[-2].expand()))
+    Item:
+        key: "a"
+        message: "Attribute Test"
+        func: input("integer 1: ")
+        func: int(result[-1].INT1)
+        func: input("integer 2: ")
+        func: int(result[-1].INT2)
+        func: print(result.INT1, result.INT2)
+        func: print("INT1 : ", result.INT1[-1000000].INT1[314198].INT2.INT1)
+        func: tuple((result.INT1, result.INT2))
+        func: print("expanded ", result[-1].EXP.expand())
+        func: print("expanded (tagged)", result.EXP.expand())
+
+Menu:
+    name: "Builtins"
+    id: builtin_menu
+    exit_to: main_menu
+
+    Item:
+        key: "l"
+        message: "Edit List"
+        func: input("List items (separated by spaces): ")
+        func: edit_list(B(lambda s: s.split(), result), kwargs(name = "Delete Items"))
+        func: print("New string:\n", B(" ".join, result))
+    Item:
+        key: "c"
+        message: "Choose Item"
+        func: input("List items (separated by spaces): ")
+        func: choose_item(B(lambda s: s.split(), result), kwargs(name = "Choose Item"))
+        func: print("New string:\n", result)
+    Item:
+        key: "v"
+        message: "Confirmation"
+        func: yesno_ver(kwargs(name = "Delete system32?", exit_message = "no"))
+        func: f_switch(result, (f_escape, yesno_ver))(kwargs(name ="Are you really sure?", exit_message = "no"))
+        func: f_switch(result, (f_escape, yesno_ver))(kwargs(name = "Are you not sure?", exit_message = "no"))
+        func: f_switch(result, (yesno_ver, f_escape))(kwargs(name = "Are you sure you are not sure?", exit_message = "wtf?"))
+        func: print(B(lambda b: "crisis averted!" if b else "deleting...\nsystem32 cannot be deleted!", result))
+
+Menu:
+    name: "Dynamic Menus"
+    id: dynamic_menu
+    exit_to: main_menu
+
+    Item:
+        key: "x"
+        message: "test keyword function compositions"
+        func: (lambda: 0)()
+        func: menu_B(result)
+    Item:
+        key: "s"
+        message: "Menu.self usage: insert new item here"
+        func: Menu.insert(Menu.self, 0, ("*", "Nice Job!", (main_menu, "*")))
+
+#==================================================================================
+
+Menu:
+    name: "Menu_A"
+    id: menu_A
+    exit_to: lazy_menu
+    end_to: Menu.exit_to
+
+    Item:
+        key: "m"
+        message: "reverse and print"
+        func: (lambda s: s[::-1])(result)
+        func: print(result)
+
+Menu:
+    name: "Menu_B"
+    id: menu_B
+    exit_to: dynamic_menu
+    escape_to: Menu.exit_to
+        
+    Item:
+        key: "s"
+        message: "test escape_to"
+        func: escape_on(result, 3)
+        func: print(result)
+        func: menu_B(B(lambda n: n+1, result[-2]))
+
+    

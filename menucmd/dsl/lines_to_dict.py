@@ -16,8 +16,8 @@ def lines_to_dict(lines: list[str]) -> dict:
         }, ...
     }
     """
-    #Remove empty lines and comments and get list
-    lines  = [line for line in lines if line.strip() and not line.strip()[:1] == '#']
+    # Remove empty lines and comments and get list
+    lines  = [line for line in lines if line.strip() and not line.strip()[:1] == '# ']
 
     struct_ = {}
     menu_id = ''
@@ -27,25 +27,26 @@ def lines_to_dict(lines: list[str]) -> dict:
     item_key = ''
     item_message = ''
 
-    #'a:b:c' -> ('a', 'b:c')
+    # 'a:b:c' -> ('a', 'b:c')
     split_pattern = r"([^:]+):([^:]+.*)"
 
-    #Iterate in reverse so "Menu:" and "Item:" compile aggregated data
+    # Iterate in reverse so "Menu:" and "Item:" compile aggregated data
     for line in reversed(lines):
 
-        #Add menu to struct_
+        # Add menu to struct_
         if line.strip() == "Menu:":
             if not menu_id:
                 raise AttributeError("Missing Menu 'id' field in {file}")
+            
+            # Reverse this so the Items show up in order!
+            struct_[menu_id] = menu_dict | {"Items":list(reversed(item_list))} 
 
-            struct_[menu_id] = menu_dict | {"Items":list(reversed(item_list))} #Reverse this so the Items show up in order!
-
-            #Reset Tracked Structures
+            # Reset Tracked Structures
             menu_id = ''
             menu_dict = {}
             item_list = []
 
-        #Add item to item_list
+        # Add item to item_list
         elif line.strip().startswith("Item:"):
             if not item_key:
                 raise AttributeError("Missing Item 'key' field in {file}")
@@ -59,8 +60,11 @@ def lines_to_dict(lines: list[str]) -> dict:
             item_message = ''
 
         elif line.startswith(' ' * 8):
-            #Construct menu item
-            split_col = re.match(split_pattern, line.strip()).groups()
+            # Construct menu item
+            match = re.match(split_pattern, line.strip())
+            if match is None:
+                raise ValueError(f"Invalid syntax (expected 'key: value'): {line.strip()}")
+            split_col = match.groups()
             name = split_col[0].strip()
             val = split_col[1].strip()
             val = strip_quotes(name, val)
@@ -73,17 +77,22 @@ def lines_to_dict(lines: list[str]) -> dict:
                 func_list.append(val)
 
         elif line.startswith(' ' * 4):
-            #Set attribute to menu_dict
-            split_col = re.match(split_pattern, line.strip()).groups()
+            # Set attribute to menu_dict
+            match = re.match(split_pattern, line.strip())
+
+            if match is None:
+                raise ValueError(f"Invalid syntax (expected 'key: value'): {line.strip()}")
+            
+            split_col = match.groups()
             name = split_col[0].strip()
             val = split_col[1].strip()
             val = strip_quotes(name, val)
 
             if name == "id":
-                #Set menu_id to hash menu_dict in struct_
+                # Set menu_id to hash menu_dict in struct_
                 menu_id = val
             else:
-                #Otherwise, set the attribute
+                # Otherwise, set the attribute
                 menu_dict[name] = val
 
     return struct_
@@ -94,7 +103,7 @@ def strip_quotes(key: str, val: str) -> str:
     Enforces using single or double quotes for representing string values.
     """
 
-    #manage the set of attribute keys NOT to enforce quotes here
+    # manage the set of attribute keys NOT to enforce quotes here
     unquoted_keys = {'id', 'exit_to', 'end_to', 'arg_to', 'escape_to', 'func'}
 
     if key not in unquoted_keys:
@@ -103,8 +112,6 @@ def strip_quotes(key: str, val: str) -> str:
                 "Value {" + val + "} must be a valid string."
                 f"Try \"{val}\""
             )
-
-        return val[1:-1]
-    
+        return val[1:-1] 
     else:
         return val

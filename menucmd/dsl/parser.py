@@ -7,7 +7,7 @@ from .lines_to_dict import lines_to_dict
 #SHORTHANDS
 result = Menu.result
 B = Bind
-
+kwargs = Menu.kwargs
 
 #Output type
 class MenuDict(dict):
@@ -149,7 +149,7 @@ def parse_funcargs(funcargs: str) -> tuple[Any, tuple]:
     """
         "func(arg1, arg2,...)" -> (func, (arg1, arg2))
     """
-    #Extract function.  Works with (lambda:(...))!
+    #Extract function.  Works with (lambda:(...))
     func_args_split = funcargs.split('(')
     func = None
     args = ()
@@ -160,7 +160,12 @@ def parse_funcargs(funcargs: str) -> tuple[Any, tuple]:
             n_closed_par += x.count(')')
             if n_closed_par == n+1:
                 func = eval("(".join(func_args_split[:-n-1]))
-                args = eval("(" + "(".join(func_args_split[-n-1:]))
+                
+                # Force args to be a tuple (,) prevents double wrap reduction
+                arg_str = "(" + "(".join(func_args_split[-n-1:])
+                args = () if arg_str.strip() == "()" \
+                    else eval(arg_str.strip()[:-1] + ",)")
+
                 break
 
         if not func:
