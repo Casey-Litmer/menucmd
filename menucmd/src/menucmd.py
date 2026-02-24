@@ -1,42 +1,16 @@
-from macrolibs.typemacros import tupler, dict_union, list_union, tuple_union
+from macrolibs.typemacros import tupler, dict_union, list_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, copy_type, maybe_type
+from .result import Result
 from copy import copy
 
 
 #----------------------------------------------------------------------------------------------------------------------
-#Result Type
-
-class Result():
-    def __init__(self, n: int):
-        self.__n__ = n
-        self.__attr__ = None
-
-    def __getitem__(self, n: int):
-        return type(self)(n).__getattr__(self.__attr__)
-
-    def __repr__(self):
-        return f"<class Result[{self.__n__}]>"
-
-    def __eq__(self, other):
-        """Compare by attribute if both self and other have attributes"""
-        if self.__attr__ is not None and hasattr(other, "__attr__") and other.__attr__ is not None:
-            return type(self) == type(other) and self.__attr__ == other.__attr__
-        else:
-            return type(self) == type(other) and self.__n__ == other.__n__
-
-    def expand(self):
-        """Type to replace and expand in place.   *result <=> result.expand()"""
-        return copy_type(type(self), "expand")(self.__n__).__getattr__(self.__attr__)
-
-    def __getattr__(self, tag):
-        """Index by attribute first.  If no attribute, index by index"""
-        new_result = type(self)(self.__n__)
-        new_result.__attr__ = tag
-        return new_result
-
-
-#----------------------------------------------------------------------------------------------------------------------
 #Menu Class
+
+class _Expand(tuple):
+    """Internal wrapper to mark an iterable for expansion as function arguments."""
+    pass
+
 
 class Menu():
     #Matching Keywords
@@ -64,7 +38,7 @@ class Menu():
                  exit_key = "e",
                  exit_message = "exit",
                  empty_message = "--*No Entries*--"
-                 ):
+                ):
         #Pass parameters
         self.name = name
         self.empty_message = empty_message
@@ -171,13 +145,10 @@ class Menu():
         func = replace_value_nested(tupler(func), Menu.self, self)[0]
         args = replace_value_nested(tupler(args), Menu.self, self)
 
-        #Tuple type to 'de-tuple'
-        expanded = copy_type(tuple, "expanded")
-
         #Replace Result Keywords by Attribute
         for tag, val in self.tracked_attributes.items():
             func = replace_value_nested(tupler(func), Result(0).__getattr__(tag), val)[0]
-            args = replace_value_nested(tupler(args), Result(0).__getattr__(tag).expand(), maybe_type(expanded, val))
+            args = replace_value_nested(tupler(args), Result(0).__getattr__(tag).expand(), maybe_type(_Expand, val))
             args = replace_value_nested(tupler(args), Result(0).__getattr__(tag), val)
 
         #Replace Result Keywords by Position
@@ -191,7 +162,7 @@ class Menu():
                 return value
 
             func = replace_value_nested(tupler(func), Result(n), results[n], callback= track_attr)[0]
-            args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(expanded, results[n]), callback= track_attr)
+            args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(_Expand, results[n]), callback= track_attr)
             args = replace_value_nested(tupler(args), Result(n), results[n], callback= track_attr)
 
 
@@ -200,30 +171,31 @@ class Menu():
         args = tupler(x for x in args if not isinstance(x, Menu.kwargs))
 
         #'Uninterprets' tupler for expanded results.  Allows inline notation for (*args) ~ result.expand()
-        args = Menu.expand_in_place(args, expanded)
+        args = tuple(Menu.expand_in_place(args))
 
         return (func, args, kwargs)
 
 
     @staticmethod
-    def expand_in_place(A: tuple | list, expand_type: type):
+    def expand_in_place(A: tuple | list):
         """Recursively expand all marked tuples/lists in a data structure
         (a, [b, expanded((c, d))]) -> (a, [b, c, d])
         """
-        new = type(A)()
+        #new = type(A)()
+        new = []
 
         for x in A:
             #Append all elements if marked as 'expanded'
-            if isinstance(x, expand_type):
-                new += type(A)(x)
+            if isinstance(x, _Expand):
+                new += list(x)
             #Run in nesting (recursion)
             elif isinstance(x, tuple | list):
-                new += type(A)(((Menu.expand_in_place(x, expand_type)),))
+                new += [Menu.expand_in_place(x)]
             #Do nothing
             else:
-                new += type(A)((x,))
+                new += [x]
 
-        return new
+        return type(A)(new)
 
 
     def __getitem__(self, idx):
@@ -279,8 +251,7 @@ class Menu():
 
 
     def ch_exit(self, exit_to = None, exit_key = None, exit_message = None) -> None:
-        """Changes the properties of the exit key and appends it to the list
-        """
+        """Changes the properties of the exit key and appends it to the list"""
         self.exit_to = exit_to if exit_to else self.exit_to
         self.exit_key = exit_key if exit_key else self.exit_key
         self.exit_message = exit_message if exit_message else self.exit_message

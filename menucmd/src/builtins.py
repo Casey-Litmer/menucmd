@@ -1,6 +1,6 @@
 from .menucmd import *
-from macrolibs.typemacros import dict_compliment, type_compliment
-from typing import Any, Iterator
+from macrolibs.typemacros import set_compliment, dict_compliment, type_compliment
+from typing import Any, TypeVar
 
 #----------------------------------------------------------------------------------------------------------------------
 #In-Line Functions
@@ -11,7 +11,7 @@ def escape_on(x, value):
     return Menu.escape if x == value else x
 
 
-def f_escape(*args, **kwargs) -> Menu.escape:
+def f_escape(*args, **kwargs) -> object:
     """Polymorphic in-line escape function."""   #terminal morphism in Hom(*,escape)
     return Menu.escape
 
@@ -29,11 +29,14 @@ def f_switch(n: int | str | Any, funcs: list | tuple | dict) -> Bind.Wrapper:
 #----------------------------------------------------------------------------------------------------------------------
 #Builtin Menus
 
+Iterables = TypeVar("Iterables", list, tuple, dict, set)
+
+
 def yesno_ver(yes = True, no = False, yes_message = "yes", **kwargs) -> bool | Any:
     """Simple yes/no verification returning bool by default
     Use yes and no tags to specify otherwise.
     """
-    kwargs_ = ({"name":"Are you sure?", "exit_message":"cancel"} | kwargs |
+    kwargs_: dict[str, Any] = ({"name":"Are you sure?", "exit_message":"cancel"} | kwargs |
                {"exit_to":lambda: no, "end_to":lambda: None})
     menu = Menu(**kwargs_)
 
@@ -42,16 +45,21 @@ def yesno_ver(yes = True, no = False, yes_message = "yes", **kwargs) -> bool | A
     return menu()
 
 
-def edit_list(entries: list | tuple | dict | set, display_as = lambda x:x, **kwargs) -> list | tuple | dict | set:
+def edit_list(entries: Iterables, display_as = lambda x:x, **kwargs) -> Iterables:
     """Delete items in a list/tuple/dict/set; returns updated list/tuple/dict/set"""
 
-    kwargs_ = {"name":"Edit List"} | kwargs | {"exit_to":lambda: entries}
+    kwargs_: dict[str, Any] = {"name":"Edit List"} | kwargs | {"exit_to":lambda: entries}
     menu = Menu(**kwargs_)
 
-    if isinstance(entries, list | tuple | set):
+    if isinstance(entries, list | tuple):
         for n, entry in enumerate(entries):
             menu.append((str(n+1), display_as(str(entry)),
                          (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(display_as=display_as, **kwargs)))))
+    
+    elif isinstance(entries, set):
+        for n, entry in enumerate(entries):
+            menu.append((str(n+1), display_as(str(entry)),
+                         (edit_list, (set_compliment(entries, {entry}), Menu.kwargs(display_as=display_as, **kwargs)))))
 
     elif isinstance(entries, dict):
         for n, (k, v) in enumerate(entries.items()):
@@ -63,17 +71,21 @@ def edit_list(entries: list | tuple | dict | set, display_as = lambda x:x, **kwa
     return type(entries)(menu())
 
 
-def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as = lambda x:x, **kwargs) -> list | tuple | dict | set:
+def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as = lambda x:x, **kwargs) -> Any:
     """Pick and return an element from a list/tuple/dict/set.
     Returns (key, value) pair for dict.
     On exit key, return 'exit_val' (None by default)
     """
-    kwargs_ = {"name": "Choose Item"} | kwargs | {"exit_to": lambda: exit_val}
+    kwargs_: dict[str, Any] = {"name": "Choose Item"} | kwargs | {"exit_to": lambda: exit_val}
     menu = Menu(**kwargs_)
 
-    if isinstance(entries, list | tuple | set):
+    if isinstance(entries, list | tuple):
         for n, entry in enumerate(entries):
             menu.append((str(n+1), display_as(str(entry)), (Menu.id, entries[n])))
+    
+    elif isinstance(entries, set):
+        for n, entry in enumerate(entries):
+            menu.append((str(n+1), display_as(str(entry)), (Menu.id, entry)))
 
     elif isinstance(entries, dict):
         for n, (k, v) in enumerate(entries.items()):
@@ -84,7 +96,7 @@ def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as 
     return menu()
 
 
-def choose_items(entries: list | tuple | dict | set, display_as = lambda x:x, **kwargs) -> list | tuple | dict | set:
+def choose_items(entries: Iterables, display_as = lambda x:x, **kwargs) -> Iterables:
     """Pick and return mutiple elements from a list/tuple/dict/set."""
     return type_compliment(entries, edit_list(entries, display_as = display_as, **kwargs))
 
