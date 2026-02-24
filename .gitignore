@@ -1,22 +1,7 @@
-# created by virtualenv automatically
 venv/
-
-*.py[cod]
-__pycache__/
-
-.idea/
-
-Git Exclude/
-
-commandmenu_config.json
-
 build/
 dist/
 *.egg-info/
-
+__pycache__/
+*.pyc
 commandmenu_config.json
-
-setup.py
-
-notebook_test.py
-.env
