@@ -104,7 +104,7 @@ def strip_quotes(key: str, val: str) -> str:
     """
 
     # manage the set of attribute keys NOT to enforce quotes here
-    unquoted_keys = {'id', 'exit_to', 'end_to', 'arg_to', 'escape_to', 'func'}
+    unquoted_keys = {'id', 'exit_to', 'end_to', 'arg_to', 'escape_to', 'func', 'clear_printout'}
 
     if key not in unquoted_keys:
         if val[0] != val[-1] or val[0] not in ('"', "'"):

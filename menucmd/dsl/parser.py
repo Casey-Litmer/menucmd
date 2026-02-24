@@ -66,6 +66,7 @@ def dict_to_obs(struct_: dict) -> MenuDict:
     STATIC_ATTRS = {
         "ID": '',
         "name": '',
+        "clear_printout": '',
         "empty_message": '',
         "exit_message": '',
         "exit_key": ''
@@ -75,6 +76,10 @@ def dict_to_obs(struct_: dict) -> MenuDict:
     for menu_id, attrs in struct_.items():
         #compare all attributes defined in dsl script, and only feed into Menu if it intersects with the blank dict
         static_attrs = dict_intersect(attrs, STATIC_ATTRS)
+
+        #Convert attrs types
+        if static_attrs.get('clear_printout'):
+            static_attrs['clear_printout'] = {'True': True, 'False': False}[static_attrs['clear_printout']]
 
         #Create Menu
         menu = Menu(**static_attrs)

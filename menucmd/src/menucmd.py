@@ -1,16 +1,17 @@
-from macrolibs.typemacros import tupler, dict_union, list_union
-from macrolibs.typemacros import replace_value_nested, maybe_arg, copy_type, maybe_type
-from .result import Result
+import sys
 from copy import copy
+from macrolibs.typemacros import tupler, dict_union, list_union
+from macrolibs.typemacros import replace_value_nested, maybe_arg, maybe_type
+from .result import Result
+from .bind import Bind
 
 
-#----------------------------------------------------------------------------------------------------------------------
+#==================================================================================
 #Menu Class
 
 class _Expand(tuple):
     """Internal wrapper to mark an iterable for expansion as function arguments."""
     pass
-
 
 class Menu():
     #Matching Keywords
@@ -37,12 +38,14 @@ class Menu():
                  arg_to = lambda x:x,
                  exit_key = "e",
                  exit_message = "exit",
-                 empty_message = "--*No Entries*--"
+                 empty_message = "--*No Entries*--",
+                 clear_printout = True
                 ):
         #Pass parameters
         self.name = name
         self.empty_message = empty_message
         self.exit_to, self.exit_key, self.exit_message = exit_to, exit_key, exit_message
+        self.clear_printout = clear_printout
 
         #Replace self references in arg_to if it is a Bind.Wrapper object
         self.arg_to = replace_value_nested(tupler(arg_to), Menu.self, self)[0]
@@ -84,11 +87,16 @@ class Menu():
             #Exit on empty menu
             print(self.empty_message)
             selection = self.exit_key
-
         else:
             #Print Menu And Get Input
-            show = f"\n{self.name}\n" + "\n".join(self.menu_display_list) + "\n"
-            selection = input(show)
+            show = f"\n{self.name}\n" + "\n".join(self.menu_display_list) + "\n";
+            print(show, end='');
+            printed_lines = show.count('\n') + 1;
+            selection = input(); 
+
+            #Clear previous menu
+            if self.clear_printout:
+                Menu.clear_lines(printed_lines);
 
         #Refresh Menu On Invalid Input
         if selection not in self.menu.keys():
@@ -154,7 +162,6 @@ class Menu():
         #Replace Result Keywords by Position
         N = len(results)
         for n in range(-N, N):
-
             #Detect if a result has an attribute and add first declaration to tracked attributes
             def track_attr(R, value):
                 if R.__attr__ is not None and R.__attr__ not in self.tracked_attributes.keys():
@@ -164,7 +171,6 @@ class Menu():
             func = replace_value_nested(tupler(func), Result(n), results[n], callback= track_attr)[0]
             args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(_Expand, results[n]), callback= track_attr)
             args = replace_value_nested(tupler(args), Result(n), results[n], callback= track_attr)
-
 
         #Separate args/kwargs
         kwargs = dict_union(tupler(x for x in args if isinstance(x, Menu.kwargs)))
@@ -181,7 +187,6 @@ class Menu():
         """Recursively expand all marked tuples/lists in a data structure
         (a, [b, expanded((c, d))]) -> (a, [b, c, d])
         """
-        #new = type(A)()
         new = []
 
         for x in A:
@@ -194,7 +199,6 @@ class Menu():
             #Do nothing
             else:
                 new += [x]
-
         return type(A)(new)
 
 
@@ -202,10 +206,17 @@ class Menu():
         if isinstance(idx, slice):
             new_menu = copy(self); new_menu.clear()
             new_menu.append(*self.menu_item_list[:-1][idx])
-
             return new_menu
-
         return self.menu_item_list[idx]
+    
+
+    @staticmethod
+    def clear_lines(printed_lines: int) -> None:
+        """Clears previous menu from terminal"""
+        for _ in range(printed_lines):
+            sys.stdout.write("\x1b[1A");  #Move cursor up
+            sys.stdout.write("\x1b[2K");  #Clear line
+        sys.stdout.flush();
 
 
     def append(self, *data):
@@ -221,13 +232,11 @@ class Menu():
             self.menu_item_list = list_union(self.menu_item_list, [n])
             self.update_menu(n)
 
-
     def clear(self):
         """Clears all items from the menu"""
         self.menu_item_list, self.menu_display_list = [], []
         self.menu = {}
         self.update_menu(self.exit)
-
 
     def insert(self, n: int, *data):
         """Insert data at position n in the form:
@@ -235,7 +244,6 @@ class Menu():
         _data = self.menu_item_list[:-1][:n] + [*data] + self.menu_item_list[:-1][n:]
         self.clear()
         self.append(*_data)
-
 
     def delete(self, n: int, k: int = 1):
         """Delete k menu entries starting at position n"""
@@ -255,7 +263,6 @@ class Menu():
         self.exit_to = exit_to if exit_to else self.exit_to
         self.exit_key = exit_key if exit_key else self.exit_key
         self.exit_message = exit_message if exit_message else self.exit_message
-
         self.exit = (self.exit_key, self.exit_message, (self.exit_to, ())) #will attempt to fill in argument with arg
         self.append()
 
@@ -266,70 +273,3 @@ class Menu():
         self.escape_to = self.exit_to if self.escape_to is Menu.exit_to else self.escape_to
         self.escape_to = self.end_to if self.escape_to is Menu.end_to else self.escape_to
 
-
-#----------------------------------------------------------------------------------------------------------------------
-#Lazy Evaluation
-
-class Bind():
-    """
-    Used for delayed evaluation.
-    Creates a callable list of function / argument pairs in the form:
-    [<function>, (args), {kwargs}]  ->  function(*args, **kwargs)
-
-    - Calling a Bind object with additional args/kwargs will append (curry) them to its initial args/kwargs.
-
-      Bind(func, args1, kwargs1)(args2, kwargs2) -> func(*args1, *args2, **kwargs1, **kwargs2)
-
-    - Use Bind(func, *args, **kwargs).fix() to toggle currying.
-    """
-    class Wrapper(list):
-        def __init__(self, data = ()):
-            super().__init__(data)
-            self.fixed = False
-
-        def __call__(self, *args, **kwargs):
-            if self.fixed:
-                return Bind.lazy_eval(self[0], self[1], self[2])
-            else:
-                return Bind.lazy_eval(self[0], self[1] + args, self[2] | kwargs)
-
-        def fix(self):
-            self.fixed = not self.fixed
-            return self
-
-    def __new__(cls, func, *args, **kwargs) -> Wrapper:
-        return cls.Wrapper([func, args, kwargs])
-
-
-    @staticmethod
-    def lazy_eval(func, args = (), kwargs = {}):
-        """Depth-first evaluation of nested function/argument bindings."""
-        func = func() if isinstance(func, Bind.Wrapper) else func
-        args = tupler(arg() if isinstance(arg, Bind.Wrapper) else arg for arg in tupler(args))
-        kwargs = {k: v() if isinstance(v, Bind.Wrapper) else v for k, v in kwargs.items()}
-
-        return func(*args, **kwargs)
-
-"""""
-Do this to evaluate Binds recursively through ALL data structures, not just immediate Bind nestings.
-This might not be the best usage because the user cannot use Bind objects in a data structure without evaluating
-everything at the same time.  Adding a keyword argument to change the desired behaviour might be the right course
-but for menucmd, it does not matter.
-
-    
-    def lazy_eval(func, args = (), kwargs = {}):
-        func = func() if isinstance(func, Bind.Wrapper) else func
-
-        def r_eval(data):
-            if isinstance(data, Bind.Wrapper):
-                return data()
-            elif isinstance(data, list | tuple):
-                return type(data)(r_eval(x) for x in data)
-            else:
-                return data
-
-        args = tupler(r_eval(arg) for arg in tupler(args))
-        kwargs = {k:r_eval(v) for k, v in kwargs.items()}
-    
-        return func(*args, **kwargs)
-"""""
