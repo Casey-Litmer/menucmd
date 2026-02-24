@@ -6,8 +6,9 @@ from .lines_to_dict import lines_to_dict
 
 #SHORTHANDS
 result = Menu.result
-B = Bind
 kwargs = Menu.kwargs
+self = Menu.self
+B = Bind
 
 #Output type
 class MenuDict(dict):
@@ -66,7 +67,7 @@ def dict_to_obs(struct_: dict) -> MenuDict:
     STATIC_ATTRS = {
         "ID": '',
         "name": '',
-        "clear_printout": '',
+        "clear_readout": '',
         "empty_message": '',
         "exit_message": '',
         "exit_key": ''
@@ -78,8 +79,8 @@ def dict_to_obs(struct_: dict) -> MenuDict:
         static_attrs = dict_intersect(attrs, STATIC_ATTRS)
 
         #Convert attrs types
-        if static_attrs.get('clear_printout'):
-            static_attrs['clear_printout'] = {'True': True, 'False': False}[static_attrs['clear_printout']]
+        if static_attrs.get('clear_readout'):
+            static_attrs['clear_readout'] = {'True': True, 'False': False}[static_attrs['clear_readout']]
 
         #Create Menu
         menu = Menu(**static_attrs)

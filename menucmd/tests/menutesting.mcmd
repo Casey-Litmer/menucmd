@@ -99,7 +99,7 @@ Menu:
     Item:
         key: "s"
         message: "Menu.self usage: insert new item here"
-        func: Menu.insert(Menu.self, 0, ("*", "Nice Job!", (main_menu, "*")))
+        func: Menu.insert(self, 0, ("*", "Nice Job!", (main_menu, "*")))
 
 #==================================================================================
 

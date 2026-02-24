@@ -17,7 +17,7 @@ def lines_to_dict(lines: list[str]) -> dict:
     }
     """
     # Remove empty lines and comments and get list
-    lines  = [line for line in lines if line.strip() and not line.strip()[:1] == '# ']
+    lines  = [line for line in lines if line.strip() and not line.strip()[:1] == '#']
 
     struct_ = {}
     menu_id = ''
@@ -104,7 +104,7 @@ def strip_quotes(key: str, val: str) -> str:
     """
 
     # manage the set of attribute keys NOT to enforce quotes here
-    unquoted_keys = {'id', 'exit_to', 'end_to', 'arg_to', 'escape_to', 'func', 'clear_printout'}
+    unquoted_keys = {'id', 'exit_to', 'end_to', 'arg_to', 'escape_to', 'func', 'clear_readout'}
 
     if key not in unquoted_keys:
         if val[0] != val[-1] or val[0] not in ('"', "'"):

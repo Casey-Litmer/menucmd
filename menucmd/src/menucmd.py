@@ -39,13 +39,13 @@ class Menu():
                  exit_key = "e",
                  exit_message = "exit",
                  empty_message = "--*No Entries*--",
-                 clear_printout = True
+                 clear_readout = True
                 ):
         #Pass parameters
         self.name = name
         self.empty_message = empty_message
         self.exit_to, self.exit_key, self.exit_message = exit_to, exit_key, exit_message
-        self.clear_printout = clear_printout
+        self.clear_readout = clear_readout
 
         #Replace self references in arg_to if it is a Bind.Wrapper object
         self.arg_to = replace_value_nested(tupler(arg_to), Menu.self, self)[0]
@@ -78,10 +78,6 @@ class Menu():
         #Reset tracked attributes
         self.tracked_attributes = {}
 
-        #Evaluate arg_to and add 0th result
-        result = maybe_arg(self.arg_to)(arg)
-        results = [result]
-
         #List state logic
         if not self.menu_display_list[:-1]:
             #Exit on empty menu
@@ -95,7 +91,7 @@ class Menu():
             selection = input(); 
 
             #Clear previous menu
-            if self.clear_printout:
+            if self.clear_readout:
                 Menu.clear_lines(printed_lines);
 
         #Refresh Menu On Invalid Input
@@ -109,6 +105,10 @@ class Menu():
         #Exit menu if exit_key pressed
         if selection == self.exit_key:
             return maybe_arg(switch[0])(arg)
+
+        #Evaluate arg_to and add 0th result
+        result = maybe_arg(self.arg_to)(arg)
+        results = [result]
 
         #Evaluate Function Chain
         while len(switch) >= 2:
