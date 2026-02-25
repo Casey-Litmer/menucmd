@@ -4,7 +4,9 @@ from macrolibs.typemacros import tupler, dict_union, list_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, maybe_type
 from .result import Result
 from .bind import Bind
-from .ansi_scheme import AnsiConfig
+from .menu_item import Item
+from .ansi_scheme import *
+from .colors import * #?? maybe
 from colorama import just_fix_windows_console
 
 just_fix_windows_console()
@@ -44,7 +46,7 @@ class Menu():
                  empty_message = "--*No Entries*--",
                  arg_to_first = True,
                  clear_readout = True,
-                 colors = AnsiConfig()
+                 colors = MenuColors()
                 ):
         #Pass parameters
         self.name = name
@@ -63,12 +65,13 @@ class Menu():
         self.apply_matching_keywords()
 
         #Init menu data
-        self.menu_item_list = []         #de jure list of items
-        self.menu_display_list = []      #["[key]- message"]
-        self.menu = {}                   #{"key":(function-arg chain)}
+        self.menu_item_list: list[Item] = []         #de jure list of items
+        self.menu_display_list = []                  #["[key]- message"]
+        self.menu = {}                               #{"key":(function-arg chain)}
 
         #Set exit option
-        self.exit = ()
+        #self.exit = None
+        self.exit: Item
         self.ch_exit()
 
         #Tracked attributes for current result chain
@@ -94,7 +97,7 @@ class Menu():
         if not self.menu_display_list[:-1]:
             #Exit on empty menu
             empty_ansi = self.colors.empty_message
-            print(f"{empty_ansi}self.empty_message\x1b[0m")
+            print(f"{empty_ansi}{self.empty_message}\x1b[0m")
             selection = self.exit_key
         else:
             #Print Menu And Get Input
@@ -115,11 +118,11 @@ class Menu():
             return self(arg)
 
         #Select Item
-        switch = self.menu[selection]
+        func_chain = self.menu[selection]
 
         #Exit menu if exit_key pressed
         if selection == self.exit_key:
-            return maybe_arg(switch[0])(arg)
+            return maybe_arg(func_chain[0][0])(arg)
 
         #Evaluate arg_to and add 0th result (After selection)
         if not self.arg_to_first:
@@ -127,10 +130,10 @@ class Menu():
             results = [result]
 
         #Evaluate Function Chain
-        while len(switch) >= 2:
+        for pair in func_chain:
             #Get func/args pair
-            func = switch[0]
-            args = tupler(switch[1])
+            func = pair[0]
+            args = tupler(pair[1])
 
             #Replace Results and Separate args/kwargs
             func, args, kwargs = self.replace_keywords(func, args, results)
@@ -144,7 +147,7 @@ class Menu():
 
             #End Loop
             results.append(result)
-            switch = switch[2:]
+            #switch = switch[1:]
 
         #Go to end_to if final value is None
         return result if result is not None else maybe_arg(self.end_to)(arg)
@@ -236,7 +239,7 @@ class Menu():
         sys.stdout.flush()
 
 
-    def append(self, *data):
+    def append(self, *data: Item):
         """
         Append data to menu in the form:
         ('key', 'message', (func1, (*args1), func2, (*args2),...))
@@ -246,7 +249,7 @@ class Menu():
         self.menu_item_list = self.menu_item_list[:-1]
 
         for n in data + (self.exit,):
-            self.menu_item_list = list_union(self.menu_item_list, [n])
+            self.menu_item_list.append(n)
             self.update_menu(n)
 
     def clear(self):
@@ -268,23 +271,27 @@ class Menu():
         self.clear()
         self.append(*_data)
 
-    def update_menu(self, data):
-        """Updates menu lists"""
-        key_ansi = self.colors.item_key
-        key_dash_ansi = self.colors.item_key_dash
-        item_message_ansi = self.colors.item_message
+    def update_menu(self, item: Item):
+        """Updates menu lists with new Item"""
+
+        colors = self.colors.merge(item.colors)
+        key_ansi = colors.key
+        key_dash_ansi = colors.key_dash
+        message_ansi = colors.message
+
         self.menu_display_list = list_union(
             self.menu_display_list, 
-            [f"{key_ansi}[{data[0]}]\x1b[0m{key_dash_ansi}-\x1b[0m {item_message_ansi}{data[1]}\x1b[0m"]
+            [f"{key_ansi}[{item.key}]\x1b[0m{key_dash_ansi}-\x1b[0m {message_ansi}{item.message}\x1b[0m"]
         )
-        self.menu[data[0]] = data[2]
+        self.menu[item.key] = item.funcs
+
 
     def ch_exit(self, exit_to = None, exit_key = None, exit_message = None) -> None:
         """Changes the properties of the exit key and appends it to the list"""
         self.exit_to = exit_to if exit_to else self.exit_to
         self.exit_key = exit_key if exit_key else self.exit_key
         self.exit_message = exit_message if exit_message else self.exit_message
-        self.exit = (self.exit_key, self.exit_message, (self.exit_to, ())) #will attempt to fill in argument with arg
+        self.exit = Item(key=self.exit_key, message=self.exit_message, funcs=[(self.exit_to, ())])
         self.append()
 
     def apply_matching_keywords(self):

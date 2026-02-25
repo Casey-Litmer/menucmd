@@ -40,7 +40,7 @@ def yesno_ver(yes = True, no = False, yes_message = "yes", **kwargs) -> bool | A
                {"exit_to":lambda: no, "end_to":lambda: None})
     menu = Menu(**kwargs_)
 
-    menu.append(("x", yes_message, (lambda: yes, ())))
+    menu.append(Item(key="x", message=yes_message, funcs=[(lambda: yes, ())]))
 
     return menu()
 
@@ -53,18 +53,19 @@ def edit_list(entries: Iterables, display_as = lambda x:x, **kwargs) -> Iterable
 
     if isinstance(entries, list | tuple):
         for n, entry in enumerate(entries):
-            menu.append((str(n+1), display_as(str(entry)),
-                         (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(display_as=display_as, **kwargs)))))
-    
+            menu.append(Item(key=str(n+1), message=display_as(str(entry)), funcs=[
+                (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(display_as=display_as, **kwargs)))
+            ]))
     elif isinstance(entries, set):
         for n, entry in enumerate(entries):
-            menu.append((str(n+1), display_as(str(entry)),
-                         (edit_list, (set_compliment(entries, {entry}), Menu.kwargs(display_as=display_as, **kwargs)))))
-
+            menu.append(Item(key=str(n+1), message=display_as(str(entry)), funcs =[
+                (edit_list, (set_compliment(entries, {entry}), Menu.kwargs(display_as=display_as, **kwargs)))
+            ]))
     elif isinstance(entries, dict):
         for n, (k, v) in enumerate(entries.items()):
-            menu.append((str(n+1), f"{k}:{display_as(str(v))}",
-                         (edit_list, (dict_compliment(entries, {k:v}), Menu.kwargs(display_as=display_as, **kwargs)))))
+            menu.append(Item(key=str(n+1), message=f"{k}:{display_as(str(v))}", funcs=[
+                (edit_list, (dict_compliment(entries, {k:v}), Menu.kwargs(display_as=display_as, **kwargs)))
+            ]))
     else:
         raise TypeError
 
@@ -81,15 +82,13 @@ def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as 
 
     if isinstance(entries, list | tuple):
         for n, entry in enumerate(entries):
-            menu.append((str(n+1), display_as(str(entry)), (Menu.id, entries[n])))
-    
+            menu.append(Item(key=str(n+1), message=display_as(str(entry)), funcs=[(Menu.id, entries[n])]))
     elif isinstance(entries, set):
         for n, entry in enumerate(entries):
-            menu.append((str(n+1), display_as(str(entry)), (Menu.id, entry)))
-
+            menu.append(Item(key=str(n+1), message=display_as(str(entry)), funcs=[(Menu.id, entry)]))
     elif isinstance(entries, dict):
         for n, (k, v) in enumerate(entries.items()):
-            menu.append((str(n+1), f"{k}:{display_as(str(v))}", (Menu.id, ((k, v),))))
+            menu.append(Item(key=str(n+1), message=f"{k}:{display_as(str(v))}", funcs=[(Menu.id, ((k, v),))]))
     else:
         raise TypeError
 

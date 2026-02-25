@@ -5,9 +5,18 @@ Menu:
     id: main_menu
     exit_key: "x"
 
+    # Implement THIS smarty pants!
+    Colors:
+        ...
+
     Item:
         key: "e"
         message: "Test Lazy Eval"
+        
+        # Implement THIS smarty pants!
+        Colors:
+            ...
+
         func: lazy_menu()
     Item:
         key: "b"
