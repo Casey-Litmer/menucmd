@@ -4,7 +4,10 @@ from macrolibs.typemacros import tupler, dict_union, list_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, maybe_type
 from .result import Result
 from .bind import Bind
+from .ansi_scheme import AnsiConfig
+from colorama import just_fix_windows_console
 
+just_fix_windows_console()
 
 #==================================================================================
 #Menu Class
@@ -39,16 +42,20 @@ class Menu():
                  exit_key = "e",
                  exit_message = "exit",
                  empty_message = "--*No Entries*--",
-                 clear_readout = True
+                 arg_to_first = True,
+                 clear_readout = True,
+                 colors = AnsiConfig()
                 ):
         #Pass parameters
         self.name = name
         self.empty_message = empty_message
         self.exit_to, self.exit_key, self.exit_message = exit_to, exit_key, exit_message
         self.clear_readout = clear_readout
+        self.colors = colors
 
         #Replace self references in arg_to if it is a Bind.Wrapper object
         self.arg_to = replace_value_nested(tupler(arg_to), Menu.self, self)[0]
+        self.arg_to_first = arg_to_first
 
         #Define breakpoints and then switch out matching keywords (if any)
         self.end_to = self if end_to is None else end_to
@@ -78,25 +85,33 @@ class Menu():
         #Reset tracked attributes
         self.tracked_attributes = {}
 
+        #Evaluate arg_to and add 0th result (Before selection)
+        if self.arg_to_first:
+            result = maybe_arg(self.arg_to)(arg)
+            results = [result]
+
         #List state logic
         if not self.menu_display_list[:-1]:
             #Exit on empty menu
-            print(self.empty_message)
+            empty_ansi = self.colors.empty_message
+            print(f"{empty_ansi}self.empty_message\x1b[0m")
             selection = self.exit_key
         else:
             #Print Menu And Get Input
-            show = f"\n{self.name}\n" + "\n".join(self.menu_display_list) + "\n";
-            print(show, end='');
-            printed_lines = show.count('\n') + 1;
-            selection = input(); 
+            name_ansi = self.colors.name
+            show = f"\n{name_ansi}{self.name}\x1b[0m\n" + "\n".join(self.menu_display_list) + "\n"
+            print(f"{show}\x1b[0m", end='')
+            printed_lines = show.count('\n') + 1
+            selection = input()
 
             #Clear previous menu
             if self.clear_readout:
-                Menu.clear_lines(printed_lines);
+                Menu.clear_lines(printed_lines)
 
         #Refresh Menu On Invalid Input
         if selection not in self.menu.keys():
-            print("--*Invalid Selection*--")
+            invalid_ansi = self.colors.invalid_selection
+            print(f"{invalid_ansi}--*Invalid Selection*--\x1b[0m")
             return self(arg)
 
         #Select Item
@@ -106,9 +121,10 @@ class Menu():
         if selection == self.exit_key:
             return maybe_arg(switch[0])(arg)
 
-        #Evaluate arg_to and add 0th result
-        result = maybe_arg(self.arg_to)(arg)
-        results = [result]
+        #Evaluate arg_to and add 0th result (After selection)
+        if not self.arg_to_first:
+            result = maybe_arg(self.arg_to)(arg)
+            results = [result]
 
         #Evaluate Function Chain
         while len(switch) >= 2:
@@ -188,7 +204,6 @@ class Menu():
         (a, [b, expanded((c, d))]) -> (a, [b, c, d])
         """
         new = []
-
         for x in A:
             #Append all elements if marked as 'expanded'
             if isinstance(x, _Expand):
@@ -204,7 +219,8 @@ class Menu():
 
     def __getitem__(self, idx):
         if isinstance(idx, slice):
-            new_menu = copy(self); new_menu.clear()
+            new_menu = copy(self)
+            new_menu.clear()
             new_menu.append(*self.menu_item_list[:-1][idx])
             return new_menu
         return self.menu_item_list[idx]
@@ -213,10 +229,11 @@ class Menu():
     @staticmethod
     def clear_lines(printed_lines: int) -> None:
         """Clears previous menu from terminal"""
-        for _ in range(printed_lines):
-            sys.stdout.write("\x1b[1A");  #Move cursor up
-            sys.stdout.write("\x1b[2K");  #Clear line
-        sys.stdout.flush();
+        if printed_lines <= 0:
+            return
+        #print(f"\x1b[{printed_lines}A\x1b[J", end='', flush=True)
+        sys.stdout.write(f"\x1b[{printed_lines}A\x1b[J")
+        sys.stdout.flush()
 
 
     def append(self, *data):
@@ -251,12 +268,16 @@ class Menu():
         self.clear()
         self.append(*_data)
 
-
     def update_menu(self, data):
         """Updates menu lists"""
-        self.menu_display_list = list_union(self.menu_display_list, [f"[{data[0]}]- {data[1]}"])
+        key_ansi = self.colors.item_key
+        key_dash_ansi = self.colors.item_key_dash
+        item_message_ansi = self.colors.item_message
+        self.menu_display_list = list_union(
+            self.menu_display_list, 
+            [f"{key_ansi}[{data[0]}]\x1b[0m{key_dash_ansi}-\x1b[0m {item_message_ansi}{data[1]}\x1b[0m"]
+        )
         self.menu[data[0]] = data[2]
-
 
     def ch_exit(self, exit_to = None, exit_key = None, exit_message = None) -> None:
         """Changes the properties of the exit key and appends it to the list"""
@@ -266,10 +287,8 @@ class Menu():
         self.exit = (self.exit_key, self.exit_message, (self.exit_to, ())) #will attempt to fill in argument with arg
         self.append()
 
-
     def apply_matching_keywords(self):
         """Apply matching keywords for end_to and escape_to in order"""
         self.end_to = self.exit_to if self.end_to is Menu.exit_to else self.end_to
         self.escape_to = self.exit_to if self.escape_to is Menu.exit_to else self.escape_to
         self.escape_to = self.end_to if self.escape_to is Menu.end_to else self.escape_to
-

@@ -2,9 +2,12 @@ from setuptools import setup, find_packages
 
 setup(
     name="menucmd",
-    version="1.1.5",
+    version="1.1.6",
     packages=find_packages(),
     include_package_data=True,
+    package_data={
+        "menucmd": ["pyinstaller/**/*"],  # include all files in pyinstaller
+    },
     author="Casey Litmer",
     author_email="litmerc@msn.com",
     description="Command line menu interface",
@@ -19,6 +22,7 @@ setup(
     ],
     install_requires=[
         "macrolibs",
+        "pyinstaller==6.19"
     ],
     python_requires='>=3.6',
 )
