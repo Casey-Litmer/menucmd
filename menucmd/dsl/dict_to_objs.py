@@ -75,9 +75,10 @@ def dict_to_objs(struct_: dict) -> MenuDict:
                 # Adds the rest: arg_to, exit_to, etc
                 setattr(menu, name, eval(attr))
 
-        # finally, update the exit item and apply matching keywords
-        menu.ch_exit()
+        # Reapply menu updates
         menu.apply_matching_keywords()
+        menu.replace_self_references()
+        menu.ch_exit()
 
     return menus
 

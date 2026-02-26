@@ -18,6 +18,10 @@ class _Expand(tuple):
     """Internal wrapper to mark an iterable for expansion as function arguments."""
     pass
 
+class _Kwargs(dict):
+    """Wrapper for kwargs in menufunction composition"""
+    pass
+
 class Menu():
     #Matching Keywords
     exit_to = object()  #Use as keyword for end_to to match exit_to:  Menu(end_to = Menu.exit_to)
@@ -27,55 +31,59 @@ class Menu():
     result = Result(-1)
     escape = object()
     self = object()
+    kwargs = _Kwargs
     __END__ = type("Menu.__END__", (object,), {})  #Terminal Object
     id = lambda x:x                                #Identity morphism
-
-    #Kwargs Wrapper
-    class kwargs(dict):
-        pass
 
     #==================================================================================
 
     def __init__(self,
                  name = "Choose Action",
-                 exit_to = lambda: Menu.__END__,
-                 end_to = None,
-                 escape_to = None,
+                 invalid_key = "--*Invalid Key*--",
+                 empty_message = "--*No Entries*--",
+                 clear_readout = True,
                  arg_to = lambda x:x,
+                 arg_to_first = True,
+                 exit_to = lambda: Menu.__END__,
                  exit_key = "e",
                  exit_message = "exit",
-                 empty_message = "--*No Entries*--",
-                 arg_to_first = True,
-                 clear_readout = True,
                  colors = MenuColors(),
                  exit_colors = ItemColors(),
+                 end_to = None,
+                 escape_to = None,
+                 #out_to = lambda x:x,
                 ):
-        #Pass parameters
+        # Menu
         self.name = name
         self.empty_message = empty_message
-        self.exit_to, self.exit_key, self.exit_message = exit_to, exit_key, exit_message
+        self.invalid_key = invalid_key
         self.clear_readout = clear_readout
-        self.colors = colors
-        self.exit_colors = exit_colors
 
-        #Replace self references in arg_to if it is a Bind.Wrapper object
-        self.arg_to = replace_value_nested(tupler(arg_to), Menu.self, self)[0]
+        # Arg
+        self.arg_to = arg_to
         self.arg_to_first = arg_to_first
 
-        #Define breakpoints and then switch out matching keywords (if any)
-        self.end_to = self if end_to is None else end_to
-        self.escape_to = self if escape_to is None else escape_to
-        self.apply_matching_keywords()
+        # Exit
+        self.exit_to= exit_to
+        self.exit_key = exit_key
+        self.exit_message =  exit_message
+        
+        # Colors
+        self.colors = colors
+        self.exit_colors = exit_colors
 
         #Init menu data
         self.menu_item_list: list[Item] = []         #de jure list of items
         self.menu_display_list = []                  #["[key]- message"]
         self.menu = {}                               #{"key":(function-arg chain)}
 
-        #Set exit option
-        #self.exit = None
-        self.exit: Item
+        #Define breakpoints, apply menu updates
+        self.end_to = self if end_to is None else end_to
+        self.escape_to = self if escape_to is None else escape_to
+        self.apply_matching_keywords()
+        self.replace_self_references()
         self.ch_exit()
+        #TODO: group together?
 
         #Tracked attributes for current result chain
         self.tracked_attributes = {}
@@ -251,6 +259,18 @@ class Menu():
         self.append(*_data)
 
 
+    def __getitem__(self, idx):
+        if isinstance(idx, slice):
+            new_menu = copy(self)
+            new_menu.clear()
+            new_menu.append(*self.menu_item_list[:-1][idx])
+            return new_menu
+        return self.menu_item_list[idx]
+    
+    #==================================================================================
+    # Updates
+    #==================================================================================
+
     def update_menu_lists(self, item: Item):
         """Updates menu lists with new Item"""
         colors = self.colors.merge(item.colors)
@@ -265,13 +285,33 @@ class Menu():
         self.menu[item.key] = item.funcs
 
 
-    def __getitem__(self, idx):
-        if isinstance(idx, slice):
-            new_menu = copy(self)
-            new_menu.clear()
-            new_menu.append(*self.menu_item_list[:-1][idx])
-            return new_menu
-        return self.menu_item_list[idx]
+    def ch_exit(self, exit_to = None, exit_key = None, exit_message = None) -> None:
+        """Changes the properties of the exit key and appends it to the list"""
+        self.exit_to = exit_to if exit_to else self.exit_to
+        self.exit_key = exit_key if exit_key else self.exit_key
+        self.exit_message = exit_message if exit_message else self.exit_message
+        self.exit = Item(
+            key=self.exit_key, message=self.exit_message, 
+            funcs=[(self.exit_to, ())], colors=self.colors.merge(self.exit_colors)
+        )
+        self.append()
+
+
+    def apply_matching_keywords(self):
+        """Apply matching keywords for end_to and escape_to in order"""
+        self.end_to = self.exit_to if self.end_to is Menu.exit_to else self.end_to
+        self.escape_to = self.exit_to if self.escape_to is Menu.exit_to else self.escape_to
+        self.escape_to = self.end_to if self.escape_to is Menu.end_to else self.escape_to
+
+
+    def replace_self_references(self):
+        """Replaces Menu.self with self in builtin menu functions"""
+        menu_funcs = { 'arg_to': self.arg_to, 'end_to': self.end_to, 'escape_to': self.escape_to }
+        for key in menu_funcs:
+            x_to = menu_funcs[key]
+            replaced = self if x_to is Menu.self \
+                else replace_value_nested(tupler(x_to), Menu.self, self)[0]
+            setattr(self, key, replaced)
 
     #==================================================================================
     # Util
@@ -305,25 +345,6 @@ class Menu():
         sys.stdout.write(f"\x1b[{printed_lines}A\x1b[J")
         sys.stdout.flush()
 
-
-    def ch_exit(self, exit_to = None, exit_key = None, exit_message = None) -> None:
-        """Changes the properties of the exit key and appends it to the list"""
-        self.exit_to = exit_to if exit_to else self.exit_to
-        self.exit_key = exit_key if exit_key else self.exit_key
-        self.exit_message = exit_message if exit_message else self.exit_message
-        self.exit = Item(
-            key=self.exit_key, message=self.exit_message, 
-            funcs=[(self.exit_to, ())], colors=self.colors.merge(self.exit_colors)
-        )
-        self.append()
-
-
-    def apply_matching_keywords(self):
-        """Apply matching keywords for end_to and escape_to in order"""
-        self.end_to = self.exit_to if self.end_to is Menu.exit_to else self.end_to
-        self.escape_to = self.exit_to if self.escape_to is Menu.exit_to else self.escape_to
-        self.escape_to = self.end_to if self.escape_to is Menu.end_to else self.escape_to
-
     #==================================================================================
     # Errors
     #==================================================================================
@@ -333,3 +354,20 @@ class Menu():
         for item in items:
             if not isinstance(item, Item):
                 raise ValueError(f"{item} is not a valid Item")
+            
+        
+    # Feeling a bit devilish here...
+    # You really shouldn't use Menu.self in exit_to because it will create an infinite loop
+    # but there are use cases with Bind in arg_to.  Screw trying to protect the fool
+    # from herself I say! I will probably create much more dynamic crazy structure
+    # on top of this library that will eventually find a use, but here it is
+    # if it becomes a necessity:
+
+    #def check_banned_self_references(self):
+    #    banned_methods = { 'exit_to': self.exit_to }
+    #    for method in banned_methods:
+    #        def callback(old, _):
+    #            if old == Menu.self:
+    #                raise ValueError(f"Menu.self cannot be used in {method}")
+    #        replace_value_nested(tupler(banned_methods[method]), Menu.self, None, callback=callback)
+            
