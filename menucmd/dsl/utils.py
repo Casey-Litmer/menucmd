@@ -23,7 +23,7 @@ def convert_static_attr_types(static_attrs: dict) -> None:
 
     if static_attrs.get('ExitColors'):
         # Rename key for menu args
-        static_attrs['exit_colors'] = convert_colors(static_attrs['ExitColors'], "Menu")
+        static_attrs['exit_colors'] = convert_colors(static_attrs['ExitColors'], "ExitColors")
         del static_attrs['ExitColors']
 
 

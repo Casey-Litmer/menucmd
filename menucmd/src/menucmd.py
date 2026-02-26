@@ -153,7 +153,6 @@ class Menu():
 
             #End Loop
             results.append(result)
-            #switch = switch[1:]
 
         #Go to end_to if final value is None
         return result if result is not None else maybe_arg(self.end_to)(arg)
@@ -223,14 +222,14 @@ class Menu():
 
         for item in items + (self.exit,):
             self.menu_item_list.append(item)
-            self.update_menu(item)
+            self.update_menu_lists(item)
 
 
     def clear(self):
         """Clears all items from the menu"""
         self.menu_item_list, self.menu_display_list = [], []
         self.menu = {}
-        self.update_menu(self.exit)
+        self.update_menu_lists(self.exit)
 
 
     def insert(self, n: int, *items):
@@ -252,7 +251,7 @@ class Menu():
         self.append(*_data)
 
 
-    def update_menu(self, item: Item):
+    def update_menu_lists(self, item: Item):
         """Updates menu lists with new Item"""
         colors = self.colors.merge(item.colors)
         key_ansi = colors.key
