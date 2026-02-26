@@ -1,10 +1,10 @@
 from .src.menucmd import Menu
-from .src.Item import Item
-from .src.Bind import Bind
-from .src.Result import Result
+from .src.item import Item
+from .src.bind import Bind
+from .src.result import Result
 
 from .src.ansi_scheme import MenuColors, ItemColors
-from .src.Colors import Colors
+from .src.colors import Colors
 
 __all__ = [
 	'Menu', 'Item', 'Bind', 'Result',

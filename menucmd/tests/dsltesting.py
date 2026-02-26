@@ -1,6 +1,5 @@
-from menucmd import Menu
 from menucmd.dsl import build_menus
-from utils import *
+from menucmd.tests.testing_utils import *
 import os
 
 

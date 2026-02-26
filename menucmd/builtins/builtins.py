@@ -1,4 +1,4 @@
-from .menucmd import *
+from ..src.menucmd import *
 from macrolibs.typemacros import set_compliment, dict_compliment, type_compliment
 from typing import Any, TypeVar
 

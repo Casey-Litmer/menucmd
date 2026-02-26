@@ -1,7 +1,7 @@
-from menucmd.src.ansi_scheme import *
 from menucmd import *
 from menucmd import Bind as B
-from utils import *
+from menucmd.builtins import *
+from .testing_utils import *
 
 
 def main():

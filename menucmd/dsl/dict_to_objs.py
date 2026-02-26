@@ -1,7 +1,7 @@
 from macrolibs.typemacros import dict_intersect, dict_compliment
-from .MenuDict import MenuDict
-from ..src.Item import Item
-from ..src.builtins import *
+from .menu_dict import MenuDict
+from ..src.item import Item
+from ..builtins.builtins import *
 from .utils import *
 
 

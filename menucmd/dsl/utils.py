@@ -1,7 +1,6 @@
-from ..src.builtins import *
+from ..builtins.builtins import *
 import inspect
-from .MenuDict import MenuDict
-from pprint import pprint
+from .menu_dict import MenuDict
 
 
 # SHORTHANDS

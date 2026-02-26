@@ -2,10 +2,10 @@ import sys
 from copy import copy
 from macrolibs.typemacros import tupler, dict_union, list_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, maybe_type
-from .Result import Result
-from .Bind import Bind
-from .Colors import *
-from .Item import Item
+from .result import Result
+from .bind import Bind
+from .colors import *
+from .item import Item
 from .ansi_scheme import *
 from colorama import just_fix_windows_console
 
