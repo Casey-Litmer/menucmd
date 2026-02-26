@@ -64,7 +64,7 @@ class Menu():
         self.arg_to_first = arg_to_first
 
         # Exit
-        self.exit_to= exit_to
+        self.exit_to = exit_to
         self.exit_key = exit_key
         self.exit_message =  exit_message
         
@@ -80,6 +80,7 @@ class Menu():
         #Define breakpoints, apply menu updates
         self.end_to = self if end_to is None else end_to
         self.escape_to = self if escape_to is None else escape_to
+        self.check_banned_self_refs()
         self.apply_matching_keywords()
         self.replace_self_references()
         self.ch_exit()
@@ -355,19 +356,10 @@ class Menu():
             if not isinstance(item, Item):
                 raise ValueError(f"{item} is not a valid Item")
             
-        
-    # Feeling a bit devilish here...
-    # You really shouldn't use Menu.self in exit_to because it will create an infinite loop
-    # but there are use cases with Bind in arg_to.  Screw trying to protect the fool
-    # from herself I say! I will probably create much more dynamic crazy structure
-    # on top of this library that will eventually find a use, but here it is
-    # if it becomes a necessity:
 
-    #def check_banned_self_references(self):
-    #    banned_methods = { 'exit_to': self.exit_to }
-    #    for method in banned_methods:
-    #        def callback(old, _):
-    #            if old == Menu.self:
-    #                raise ValueError(f"Menu.self cannot be used in {method}")
-    #        replace_value_nested(tupler(banned_methods[method]), Menu.self, None, callback=callback)
-            
+    def check_banned_self_refs(self):
+        banned_methods = { 'exit_to': self.exit_to, 'arg_to': self.arg_to  }
+        for method in banned_methods:
+            if banned_methods[method] is Menu.self:
+                raise RecursionError(f"Menu \"{self.name}\" {method} cannot be Menu.self")
+        
