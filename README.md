@@ -6,7 +6,7 @@ pip install menucmd
 
 MenuCMD provides a lightweight, functional‑style framework for building interactive command‑line menus.  It keeps business logic (your functions) completely separate from the navigation layer, so the same code can run both interactively and unattended.
 
-Use it for quick debugging utilities, as a CLI frontend for scripts, or whenever you need lazy/deferred evaluation.  A simple `.mcmd` DSL is included to describe static menus in plain text.
+Use it for quick debugging utilities, as a CLI frontend for scripts, or whenever you need lazy/deferred evaluation.  The package includes a simple `.mcmd` DSL to describe static menus in plain text.
 
 ---
 ## Sections
@@ -43,7 +43,7 @@ Use it for quick debugging utilities, as a CLI frontend for scripts, or whenever
    - [Indexing and Slicing](#menu-indexing-and-slicing)
 
 ### 6. Other Menu Attributes
-   - [Colors and Appearance: `MenuColors`, `ItemColors`, `Colors`](#colors-and-appearance-menucolors-itemcolors-colors)
+   - [Colors and Appearance: `MenuColors`, `ItemColors`, `Colors`, `exit_colors`](#colors-and-appearance-menucolors-itemcolors-colors-exit_colors)
    - [`Menu.kwargs`](#menukwargs)
    - [Early Exit: `escape`, `escape_to`](#early-exit-escape-escape_to)
    - [`Menu.self`](#menuself)
@@ -80,7 +80,7 @@ menu1 = Menu(name = "First Menu")
 ```
 -------
 ### Menu Items
-Menu items are created using the `Item` class with three main parts:
+Create menu items using the `Item` class with three main parts:
 
 ```python
 from menucmd import Menu, Item
@@ -164,7 +164,7 @@ First Menu
 ```
 
 In addition to the items you add, all menus will automatically add an *exit key* at the end of the list which
-will break out of the menu by default.  (This behaviour can be changed with the menu initialization)
+will break out of the menu by default.  (You can change this behaviour when initializing the menu)
 
 When there is no more code to be run after the menu breaks, the program ends.
 
@@ -173,7 +173,7 @@ When there is no more code to be run after the menu breaks, the program ends.
 ## 2. Multiple Menus
 
 ### Defining Two Menus
-Menus can open other menus by running them as functions allowing the user to navigate through a deeper menu structure.
+You can open other menus by running them as functions, letting the user navigate through a deeper menu structure.
 
 First create a new `Menu` instance in the same way as **menu1**:
 
@@ -249,7 +249,7 @@ When the user selects `a` then exits from `menu2`, control returns to `menu1` be
 
 ### Passing Data Between Menus
 
-Menus can call other menus and pass data via `result`. To send the current menu argument into another menu, pass `result` as the argument when calling that menu:
+A menu can call another and pass data via `result`. To send the current menu argument into the target menu, pass `result` as the argument when calling it:
 
 ```python
 menu_a = Menu(name="Menu A")
@@ -309,7 +309,7 @@ If the menu does not invoke `end_to`, it will return the *last return* in the ch
 
 When you chain functions, you often need the output of one function as input to the next. That's what `result` does.
 
-`result` is a special placeholder that gets replaced with the output of the previous function during execution.
+`result` serves as a special placeholder, replacing the output of the previous function during execution.
 
 **Simple example:** Get number → convert to int → square it → print:
 
@@ -508,7 +508,7 @@ A `Bind` object holds a function and arguments, evaluating them only when needed
 B(func, *args, **kwargs)
 ```
 
-Inside a menu chain, `Bind` objects are automatically evaluated. Outside of menus, call them with `()`:
+Menus evaluate `Bind` objects automatically during a chain; outside of menus, just call them with `()`: 
 
 ```python
 lazy_func = B(print, "Hello")
@@ -585,19 +585,29 @@ menu[0] = new_item  # Replace item
 
 ## 6. Other Menu Attributes
 
-### Colors and Appearance: `MenuColors`, `ItemColors`, `Colors`
+### Colors and Appearance: `MenuColors`, `ItemColors`, `Colors`, `exit_colors`
 
-Menus and items can be styled using ANSI escape codes. Three helper classes are provided:
+Style menus and items with ANSI escape codes. Three helper classes help you do this:
 
-- `Colors`: a simple namespace of ANSI color/formatting codes (e.g. `Colors.RED`, `Colors.BOLD`).
-- `MenuColors`: a dataclass defining default colours for menu elements such as the name, exit message, invalid selection text, and default item key/message colours. Instantiate it and pass via the `colors` argument when creating a `Menu`.
-- `ItemColors`: a smaller dataclass used to override colours for individual items. When an item has its own `colors` value, its non-`None` attributes replace the corresponding defaults from the parent `MenuColors` on an attribute‑by‑attribute basis.
+- `Colors` provides a simple namespace of ANSI color/formatting codes (e.g. `Colors.RED`, `Colors.BOLD`).
+- `MenuColors`: a dataclass that defines default colors for menu elements.  Instantiate it and pass via the `colors` argument when creating a `Menu`.  Its fields include:
+  - `name` – the menu title line.
+  - `empty_message` – text shown when the menu has no entries.
+  - `invalid_selection` – message printed on bad keypress.
+  - ***All fields in `ItemColors`**
+- `ItemColors`: a subset of `MenuColors` that overrides colors for individual items on an attribute‑by‑attribute basis.  Its fields include:
+  - `key` - the item key
+  - `key_dash` - the dash between key and message
+  - `message` - the item message
 
-Example:
+The `exit_colors` parameter in `Menu` also accepts an `ItemColors` instance and works in the same way as colors passed to an `Item`.
+
 ```python
 from menucmd import Menu, Item, MenuColors, ItemColors, Colors
 
-menu = Menu(colors=MenuColors(key=Colors.LIGHT_BLUE + Colors.BOLD))
+menu = Menu(colors=MenuColors(...),
+            exit_colors=ItemColors(key=Colors.RED + Colors.BOLD))
+
 menu.append(
     Item(key="a", message="blue key", funcs=[(print, "hi")]),
     Item(key="b", message="red key", funcs=[(print, "yo")],
@@ -605,7 +615,7 @@ menu.append(
 )
 ```
 
-In the example above the second item only overrides the `key` colour, inheriting the other styles from `menu.colors`.
+In the example above the second item only overrides the `key` color, inheriting the other styles from `menu.colors`.
 
 ### Menu.kwargs
 
@@ -742,6 +752,7 @@ cannot create dynamic menus, it can access any function that does using the pyth
 - Menu id, function references, and function calls are written without quotes.
 - Comments are one line only!  They will not be removed at the end of a line.
 - Blank lines do not matter.
+- You can include `Colors` and `ExitColors` blocks inside a `Menu` declaration. `ExitColors` works like an item color block but applies only to the exit key.
 
 
 Example .mcmd file:
@@ -753,6 +764,11 @@ Menu:
     id: main_menu
     exit_key: "e"
     exit_message: "exit"
+    Colors:
+        key: Colors.LIGHT_BLUE + Colors.BOLD
+    ExitColors:
+        key: Colors.RED + Colors.BOLD
+        message: Colors.FAINT
     
     # <- This is a comment
     
@@ -798,8 +814,8 @@ def main():
     main_menu()
 ```
 
-`build_menus` will automatically import the scope from where you imported it and create pointers between menus
-extracted from the `id` field under the `Menu` declaration.  The object it returns can be hashed by ids 
+`build_menus` imports the scope from where you call it and creates pointers between menus
+extracted from the `id` field under the `Menu` declaration.  You can hash the returned object by ids 
 as a dictionary, or return menus from attributes: 
 
 `menus['menu_id'] = menu.menu_id`

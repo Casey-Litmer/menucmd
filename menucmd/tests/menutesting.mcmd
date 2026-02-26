@@ -6,6 +6,10 @@ Menu:
     Colors:
         key: Colors.LIGHT_BLUE + Colors.BOLD
 
+    ExitColors:
+        key: Colors.RED + Colors.BOLD
+        message: Colors.FAINT
+
     Item:
         key: "e"
         message: "Test Lazy Eval"

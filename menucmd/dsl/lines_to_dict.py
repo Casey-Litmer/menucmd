@@ -25,6 +25,7 @@ def lines_to_dict(lines: list[str]) -> dict:
                 "name": "Hub",
                 "id": "main_menu",
                 "Colors": {...},
+                "ExitColors": {...},
                 "Item": [
                     {"key": "e", "message": "Test", "func": ["func(args)", ...], "Colors": {...}},
                     {"key": "b", "message": "Another", ...}
@@ -83,11 +84,13 @@ def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_bl
             error = False
             match block_name:
                 case 'Menu':
-                    error = last_block_name in ('Item', 'Colors')
+                    error = last_block_name in { 'Colors', 'Item', 'ExitColors', 'Menu'}
                 case 'Item':
-                    error = last_block_name in ('Colors', 'Item') 
+                    error = last_block_name in { 'Colors', 'Item', 'ExitColors' } 
                 case 'Colors':
-                    error = last_block_name in ('Colors',)
+                    error = last_block_name in { 'Colors', 'ExitColors' }
+                case 'ExitColors':
+                    error = last_block_name in { 'Colors', 'Item', 'ExitColors' }
 
             if error:
                 raise SyntaxError(f"{block_name} cannot be a descendent of {last_block_name}.")

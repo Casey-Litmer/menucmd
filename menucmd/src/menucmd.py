@@ -47,7 +47,8 @@ class Menu():
                  empty_message = "--*No Entries*--",
                  arg_to_first = True,
                  clear_readout = True,
-                 colors = MenuColors()
+                 colors = MenuColors(),
+                 exit_colors = ItemColors(),
                 ):
         #Pass parameters
         self.name = name
@@ -55,6 +56,7 @@ class Menu():
         self.exit_to, self.exit_key, self.exit_message = exit_to, exit_key, exit_message
         self.clear_readout = clear_readout
         self.colors = colors
+        self.exit_colors = exit_colors
 
         #Replace self references in arg_to if it is a Bind.Wrapper object
         self.arg_to = replace_value_nested(tupler(arg_to), Menu.self, self)[0]
@@ -310,7 +312,10 @@ class Menu():
         self.exit_to = exit_to if exit_to else self.exit_to
         self.exit_key = exit_key if exit_key else self.exit_key
         self.exit_message = exit_message if exit_message else self.exit_message
-        self.exit = Item(key=self.exit_key, message=self.exit_message, funcs=[(self.exit_to, ())])
+        self.exit = Item(
+            key=self.exit_key, message=self.exit_message, 
+            funcs=[(self.exit_to, ())], colors=self.colors.merge(self.exit_colors)
+        )
         self.append()
 
 

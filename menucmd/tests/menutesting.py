@@ -1,14 +1,14 @@
 from menucmd import *
 from menucmd import Bind as B
 from menucmd.builtins import *
-from .testing_utils import *
+from menucmd.tests.testing_utils import *
 
 
 def main():
     result = Menu.result
     kwargs = Menu.kwargs
 
-    main_menu = Menu(name = "Hub", exit_key = "x", colors=MenuColors(key=Colors.LIGHT_BLUE + Colors.BOLD))
+    main_menu = Menu(name = "Hub", exit_key = "x", colors=MenuColors(key=Colors.LIGHT_BLUE + Colors.BOLD), exit_colors=ItemColors(key=Colors.RED))
     lazy_menu = Menu(name = "Lazy Eval", exit_to = main_menu, colors=MenuColors(key=Colors.LIGHT_BLUE + Colors.BOLD))
     builtin_menu = Menu(name = "Builtins", exit_to = main_menu, colors=MenuColors(key=Colors.CYAN  + Colors.BOLD))
     dynamic_menu = Menu(name = "Dynamic Menus", exit_to = main_menu, colors=MenuColors(key=Colors.CYAN + Colors.BOLD))

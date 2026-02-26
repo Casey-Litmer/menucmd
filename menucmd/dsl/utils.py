@@ -13,7 +13,7 @@ B = Bind
 def convert_static_attr_types(static_attrs: dict) -> None:
     """Converts Non-String types"""
     for key, val in static_attrs.items():
-        if key not in { 'Colors' }:
+        if key not in { 'Colors', 'ExitColors' }:
             static_attrs[key] = eval(val)
 
     if static_attrs.get('Colors'):
@@ -21,10 +21,15 @@ def convert_static_attr_types(static_attrs: dict) -> None:
         static_attrs['colors'] = convert_colors(static_attrs['Colors'], "Menu")
         del static_attrs['Colors']
 
+    if static_attrs.get('ExitColors'):
+        # Rename key for menu args
+        static_attrs['exit_colors'] = convert_colors(static_attrs['ExitColors'], "Menu")
+        del static_attrs['ExitColors']
+
 
 def convert_colors(colors: dict, block: str) -> MenuColors | ItemColors:
     """Evaluates ANSI color schemes"""
-    scheme = {'Menu': MenuColors, 'Item': ItemColors}[block]
+    scheme = {'Menu': MenuColors, 'Item': ItemColors, 'ExitColors': ItemColors}[block]
     return scheme(**dict([k, eval(v)] for k, v in colors.items()))
 
 
