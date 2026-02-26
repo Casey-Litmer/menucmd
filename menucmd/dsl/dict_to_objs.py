@@ -127,8 +127,7 @@ def _parse_funcargs(funcargs: str) -> tuple[Any, tuple]:
                 if '=' in arg_str and '==' not in arg_str and ':=' not in arg_str:
                     raise SyntaxError(
                         f"Invalid keyword argument syntax in '{funcargs}'.\n"
-                        f"All keyword arguments must be wrapped in 'kwargs()'.\n"
-                        f"      Ex: func(arg1, kwargs(key=value))"
+                        f"All keyword arguments must be wrapped in 'Menu.kwargs()'.\n"
                     ) from e
                 raise SyntaxError from e
 
