@@ -2,11 +2,11 @@ import sys
 from copy import copy
 from macrolibs.typemacros import tupler, dict_union, list_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, maybe_type
-from .result import Result
-from .bind import Bind
-from .menu_item import Item
+from .Result import Result
+from .Bind import Bind
+from .Colors import *
+from .Item import Item
 from .ansi_scheme import *
-from .colors import * #?? maybe
 from colorama import just_fix_windows_console
 
 just_fix_windows_console()
@@ -27,13 +27,14 @@ class Menu():
     result = Result(-1)
     escape = object()
     self = object()
-
     __END__ = type("Menu.__END__", (object,), {})  #Terminal Object
     id = lambda x:x                                #Identity morphism
 
     #Kwargs Wrapper
     class kwargs(dict):
         pass
+
+    #==================================================================================
 
     def __init__(self,
                  name = "Choose Action",
@@ -77,6 +78,9 @@ class Menu():
         #Tracked attributes for current result chain
         self.tracked_attributes = {}
 
+    #==================================================================================
+    # Protocall
+    #==================================================================================
 
     def __call__(self, arg = None):
         """Runs menu with 'arg' asking for user input.
@@ -200,6 +204,77 @@ class Menu():
 
         return (func, args, kwargs)
 
+    #==================================================================================
+    # API
+    #==================================================================================
+
+    def append(self, *items: Item):
+        """
+        Append items to menu in the form:
+        ('key', 'message', (func1, (*args1), func2, (*args2),...))
+        --*{forces exit key to the end of the list}*--
+        """
+        Menu.check_item_type(*items)
+
+        self.menu_display_list = self.menu_display_list[:-1]
+        self.menu_item_list = self.menu_item_list[:-1]
+
+        for item in items + (self.exit,):
+            self.menu_item_list.append(item)
+            self.update_menu(item)
+
+
+    def clear(self):
+        """Clears all items from the menu"""
+        self.menu_item_list, self.menu_display_list = [], []
+        self.menu = {}
+        self.update_menu(self.exit)
+
+
+    def insert(self, n: int, *items):
+        """
+        Insert items at position n in the form:
+        ('key', 'message', (func1, (*args1), func2, (*args2),...))
+        """
+        Menu.check_item_type(*items)
+
+        _data = self.menu_item_list[:-1][:n] + [*items] + self.menu_item_list[:-1][n:]
+        self.clear()
+        self.append(*_data)
+
+
+    def delete(self, n: int, k: int = 1):
+        """Delete k menu entries starting at position n"""
+        _data = self.menu_item_list[:-1][:n] + self.menu_item_list[:-1][n+k:]
+        self.clear()
+        self.append(*_data)
+
+
+    def update_menu(self, item: Item):
+        """Updates menu lists with new Item"""
+        colors = self.colors.merge(item.colors)
+        key_ansi = colors.key
+        key_dash_ansi = colors.key_dash
+        message_ansi = colors.message
+
+        self.menu_display_list = list_union(
+            self.menu_display_list, 
+            [f"{key_ansi}[{item.key}]\x1b[0m{key_dash_ansi}-\x1b[0m {message_ansi}{item.message}\x1b[0m"]
+        )
+        self.menu[item.key] = item.funcs
+
+
+    def __getitem__(self, idx):
+        if isinstance(idx, slice):
+            new_menu = copy(self)
+            new_menu.clear()
+            new_menu.append(*self.menu_item_list[:-1][idx])
+            return new_menu
+        return self.menu_item_list[idx]
+
+    #==================================================================================
+    # Util
+    #==================================================================================
 
     @staticmethod
     def expand_in_place(A: tuple | list):
@@ -220,15 +295,6 @@ class Menu():
         return type(A)(new)
 
 
-    def __getitem__(self, idx):
-        if isinstance(idx, slice):
-            new_menu = copy(self)
-            new_menu.clear()
-            new_menu.append(*self.menu_item_list[:-1][idx])
-            return new_menu
-        return self.menu_item_list[idx]
-    
-
     @staticmethod
     def clear_lines(printed_lines: int) -> None:
         """Clears previous menu from terminal"""
@@ -239,53 +305,6 @@ class Menu():
         sys.stdout.flush()
 
 
-    def append(self, *data: Item):
-        """
-        Append data to menu in the form:
-        ('key', 'message', (func1, (*args1), func2, (*args2),...))
-        --*{forces exit key to the end of the list}*--
-        """
-        self.menu_display_list = self.menu_display_list[:-1]
-        self.menu_item_list = self.menu_item_list[:-1]
-
-        for n in data + (self.exit,):
-            self.menu_item_list.append(n)
-            self.update_menu(n)
-
-    def clear(self):
-        """Clears all items from the menu"""
-        self.menu_item_list, self.menu_display_list = [], []
-        self.menu = {}
-        self.update_menu(self.exit)
-
-    def insert(self, n: int, *data):
-        """Insert data at position n in the form:
-        ('key', 'message', (func1, (*args1), func2, (*args2),...))"""
-        _data = self.menu_item_list[:-1][:n] + [*data] + self.menu_item_list[:-1][n:]
-        self.clear()
-        self.append(*_data)
-
-    def delete(self, n: int, k: int = 1):
-        """Delete k menu entries starting at position n"""
-        _data = self.menu_item_list[:-1][:n] + self.menu_item_list[:-1][n+k:]
-        self.clear()
-        self.append(*_data)
-
-    def update_menu(self, item: Item):
-        """Updates menu lists with new Item"""
-
-        colors = self.colors.merge(item.colors)
-        key_ansi = colors.key
-        key_dash_ansi = colors.key_dash
-        message_ansi = colors.message
-
-        self.menu_display_list = list_union(
-            self.menu_display_list, 
-            [f"{key_ansi}[{item.key}]\x1b[0m{key_dash_ansi}-\x1b[0m {message_ansi}{item.message}\x1b[0m"]
-        )
-        self.menu[item.key] = item.funcs
-
-
     def ch_exit(self, exit_to = None, exit_key = None, exit_message = None) -> None:
         """Changes the properties of the exit key and appends it to the list"""
         self.exit_to = exit_to if exit_to else self.exit_to
@@ -294,8 +313,19 @@ class Menu():
         self.exit = Item(key=self.exit_key, message=self.exit_message, funcs=[(self.exit_to, ())])
         self.append()
 
+
     def apply_matching_keywords(self):
         """Apply matching keywords for end_to and escape_to in order"""
         self.end_to = self.exit_to if self.end_to is Menu.exit_to else self.end_to
         self.escape_to = self.exit_to if self.escape_to is Menu.exit_to else self.escape_to
         self.escape_to = self.end_to if self.escape_to is Menu.end_to else self.escape_to
+
+    #==================================================================================
+    # Errors
+    #==================================================================================
+
+    @staticmethod
+    def check_item_type(*items):
+        for item in items:
+            if not isinstance(item, Item):
+                raise ValueError(f"{item} is not a valid Item")

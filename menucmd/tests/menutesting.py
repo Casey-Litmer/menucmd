@@ -84,6 +84,12 @@ def main():
                 Item(key="*", message="Nice Job!", funcs=[(main_menu, "*")], 
                      colors=ItemColors(key=Colors.RED + Colors.BOLD)
                 )
+                # LIMITATION:
+                # In order to have dynamic reference to other menus, the functions
+                # must be defined in the same scope as the menus.  If you wanted to 
+                # abstract the above out, it would therefore be impossible.
+                # In the future there needs to be a global menu reference interface
+                # as well as in the DSL!!
             )),
         ])
     )

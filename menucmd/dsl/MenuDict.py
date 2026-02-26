@@ -8,9 +8,9 @@ class MenuDict(dict):
     """
     def __init__(self, menus: list):
         for menu in menus:
-            self.__setattr__(menu.ID, menu)
+            self.__setattr__(menu._id, menu)
 
-        self.menus = {menu.ID:menu for menu in menus}
+        self.menus = {menu._id: menu for menu in menus}
 
     def __getitem__(self, item):
         return self.menus[item]

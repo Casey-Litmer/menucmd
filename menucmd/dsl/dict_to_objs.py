@@ -1,5 +1,6 @@
 from macrolibs.typemacros import dict_intersect, dict_compliment
-from .menu_dict import MenuDict
+from .MenuDict import MenuDict
+from ..src.Item import Item
 from ..src.builtins import *
 from .utils import *
 
@@ -7,13 +8,14 @@ from .utils import *
 # Blank dict with only static attribute names
 # Init Menu with these...
 STATIC_ATTRS = {
-    "ID": '',
+    #"ID": '',
     "name": '',
     "clear_readout": '',
     "arg_to_first": '',
     "empty_message": '',
     "exit_message": '',
-    "exit_key": ''
+    "exit_key": '',
+    "Colors": '',
 }
 
 #==================================================================================
@@ -27,42 +29,48 @@ def dict_to_objs(struct_: dict) -> MenuDict:
     """
     menus = []
 
+    if not "Menu" in struct_:
+        raise RuntimeError("'Menu' must be present in the outer struct!")
+
     #Initlialize all menus with only static attributes to a dict indexed by 'ID'
-    for menu_id, attrs in struct_.items():
+    for attrs in struct_["Menu"]:
+        # Require id
+        if not attrs.get('id'):
+            raise KeyError("Menu must have an 'id' attribute")
+        menu_id = attrs['id']
+        
         # Compare all attributes defined in dsl script, and only feed into Menu 
         # if it intersects with the blank dict
         static_attrs = dict_intersect(attrs, STATIC_ATTRS)
 
         # Convert attrs types
-        convert_attr_types(static_attrs)
+        convert_static_attr_types(static_attrs)
 
         # Create Menu
         menu = Menu(**static_attrs)
 
         # Add id
-        setattr(menu, "ID", menu_id)
+        setattr(menu, "_id", menu_id)
 
         # Add to list
         menus.append(menu)
 
-    # Convert list to attributable dict:  {menu_id: Menu}
+    # Convert list to attributable dict: {menu_id: Menu}
     menus = MenuDict(menus)
-
-    print(menus)
 
     #Add menu ids to global pointers and retrieve caller globals
     cannonize_menu_ids(menus, globals())
     retrieve_globals(globals())
 
     #Set all non-static attributes and convert 'ID' references to pointers
-    for menu_id, menu, attrs in zip(menus.keys(), menus.values(), struct_.values()):
-        #Get all remaining attributes
-        active_attributes = dict_compliment(attrs, static_attrs)
+    for menu_id, menu, attrs in zip(menus.keys(), menus.values(), struct_["Menu"]):
+        # Get all remaining attributes                            
+        active_attributes = dict_compliment(attrs, STATIC_ATTRS)
 
         for name, attr in active_attributes.items():
-            if name == "Items":
+            if name == "Item":
                 #attr = (['key', 'message', "func1(*args)", "func2(*args),..."],...)
-                append_menu_items(attr, menu)
+                append_menu_items(menu, attr)
             else:
                 #Adds the rest: arg_to, exit_to, etc
                 setattr(menu, name, eval(attr))
@@ -74,23 +82,24 @@ def dict_to_objs(struct_: dict) -> MenuDict:
     return menus
 
 
-def append_menu_items(items: list[str], menu: Menu):
+def append_menu_items( menu: Menu, items: list[dict],):
     """
-    Converts "Items" list into menucmd format and appends to menu.
-    (['key', 'message', "func1(arg1, arg2)", "func2(arg3, arg4)",...],...)
-    -> [('key', 'message', (func1, (arg1, arg2), func2, (arg3, arg4)))]
+    Converts "Item" list into Items and appends to menu.
+    [{key, message, funcs, Colors}, ...] -> Item
     """
-    literal_items = []
-
     for item in items:
-        key = item[0]; message = item[1]
-        funcs = ()
-        for funcargs in item[2:]:
-            funcs += parse_funcargs(funcargs)
-        literal_items.append((key, message, tuple(funcs)))
+        if not item.get('key'):
+            raise KeyError("Menu must have 'key' attribute")
 
-    menu.append(*literal_items)
-
+        funcs = [parse_funcargs(funcargs) for funcargs in item['func']] if item.get('func') else []
+        colors = convert_colors(item['Colors'], "Item") if item.get('Colors') else None  
+        
+        # Append Items
+        menu.append(Item(
+            key=eval(item["key"]), message=eval(item["message"]), 
+            funcs=funcs, colors=colors
+        )) 
+        
 
 def parse_funcargs(funcargs: str) -> tuple[Any, tuple]:
     """

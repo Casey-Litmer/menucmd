@@ -1,6 +1,6 @@
 from dataclasses import dataclass, replace, asdict
 from typing import Optional
-from .colors import Colors
+from .Colors import Colors
 
 
 @dataclass

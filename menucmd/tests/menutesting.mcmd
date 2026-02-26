@@ -1,22 +1,14 @@
-
-
 Menu:
     name: "Hub"
     id: main_menu
     exit_key: "x"
 
-    # Implement THIS smarty pants!
     Colors:
-        ...
+        key: Colors.LIGHT_BLUE + Colors.BOLD
 
     Item:
         key: "e"
         message: "Test Lazy Eval"
-        
-        # Implement THIS smarty pants!
-        Colors:
-            ...
-
         func: lazy_menu()
     Item:
         key: "b"
@@ -31,6 +23,9 @@ Menu:
     name: "Lazy Eval"
     id: lazy_menu
     exit_to: main_menu
+
+    Colors:
+        key: Colors.LIGHT_BLUE + Colors.BOLD
 
     Item:
         key: "s"
@@ -74,6 +69,9 @@ Menu:
     id: builtin_menu
     exit_to: main_menu
 
+    Colors:
+        key: Colors.CYAN + Colors.BOLD
+
     Item:
         key: "l"
         message: "Edit List"
@@ -100,6 +98,9 @@ Menu:
     id: dynamic_menu
     exit_to: main_menu
 
+    Colors:
+        key: Colors.CYAN + Colors.BOLD
+
     Item:
         key: "x"
         message: "test keyword function compositions"
@@ -108,7 +109,7 @@ Menu:
     Item:
         key: "s"
         message: "Menu.self usage: insert new item here"
-        func: Menu.insert(self, 0, ("*", "Nice Job!", (main_menu, "*")))
+        func: Menu.insert(self, 0, Item(key="*", message="Nice Job!", funcs=[(main_menu, "*")], colors=ItemColors(key=Colors.RED + Colors.BOLD)))
 
 #==================================================================================
 
@@ -117,6 +118,10 @@ Menu:
     id: menu_A
     exit_to: lazy_menu
     end_to: Menu.exit_to
+
+    Colors:
+        key: Colors.RED
+        message: Colors.FAINT
 
     Item:
         key: "m"
@@ -129,6 +134,10 @@ Menu:
     id: menu_B
     exit_to: dynamic_menu
     escape_to: Menu.exit_to
+
+    Colors:
+        key: Colors.RED
+        message: Colors.FAINT
         
     Item:
         key: "s"

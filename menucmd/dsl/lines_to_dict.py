@@ -1,116 +1,178 @@
 import re
 
 
+
 def lines_to_dict(lines: list[str]) -> dict:
     """
-    Converts list of lines to dictionary structure to be further parsed:
+    Generic recursive descent parser for DSL format.
+    
+    Grammar (indentation-based):
+    - Lines ending with ':' are block headers (e.g., Menu:, Item:, Colors:, func:)
+    - Other lines are key:value pairs
+    - Indentation (multiples of 4 spaces) determines nesting depth
+    - Comments (#) and blank lines are stripped
+    
+    Returns a generic nested dict where:
+    - Block types are keys (e.g., 'Menu', 'Item', 'Colors')
+    - Multiple blocks of same type become lists
+    - Non-opinionated: no semantic assumptions about block types
+    - Fully extensible: add new block types by just using 'BlockName:'
+    
+    Example output structure:
     {
-    'id':{
-        'name':'menu_name',
-        'arg_to': 'func_arg_to',
-        'exit_to': 'func_exit_to',
-        'exit_key': 'e', ...
-        'Items': [
-                ['key', 'message', 'func1(args)', 'func2(args)'], ...
-            ]
-        }, ...
+        "Menu": [
+            {
+                "name": "Hub",
+                "id": "main_menu",
+                "Colors": {...},
+                "Item": [
+                    {"key": "e", "message": "Test", "func": ["func(args)", ...], "Colors": {...}},
+                    {"key": "b", "message": "Another", ...}
+                ]
+            },
+            {
+                "name": "Lazy Eval",
+                "id": "lazy_menu",
+                ...
+            }
+        ]
     }
     """
-    # Remove empty lines and comments and get list
-    lines  = [line for line in lines if line.strip() and not line.strip()[:1] == '#']
+    lines = [line for line in lines if line.strip() and not line.strip().startswith('#')]
 
-    struct_ = {}
-    menu_id = ''
-    menu_dict = {}
-    item_list = []
-    func_list = []
-    item_key = ''
-    item_message = ''
+    if not lines:
+        return {}
+    
+    result, _ = _parse_block(lines, 0, 0)
+    
+    return result
 
-    # 'a:b:c' -> ('a', 'b:c')
-    split_pattern = r"([^:]+):([^:]+.*)"
 
-    # Iterate in reverse so "Menu:" and "Item:" compile aggregated data
-    for line in reversed(lines):
+def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_block_name: str = '') -> tuple[dict, int]:
+    """
+    Recursively parse all lines at a given indent level.
+    
+    Returns:
+        (dict of parsed content, next unprocessed line index)
+    """
+    block = {}
+    n = start_idx
+    
+    while n < len(lines):
+        line = lines[n]
+        current_indent = _get_indent(line)
+        stripped = line.strip()
+        
+        # Exit Scope
+        if current_indent < expected_indent:
+            return block, n
+        
+        # Over-Indent
+        if current_indent > expected_indent:
+            raise IndentationError(line)
+        
+        # Block header (any line ending with ':')
+        if stripped.endswith(':'):
+            block_name = stripped[:-1]
 
-        # Add menu to struct_
-        if line.strip() == "Menu:":
-            if not menu_id:
-                raise AttributeError("Missing Menu 'id' field in {file}")
+            # First block must be Menu
+            if block_name != 'Menu' and n == 0:
+                raise SyntaxError(f"{block_name} must be a descendent of Menu")
             
-            # Reverse this so the Items show up in order!
-            struct_[menu_id] = menu_dict | {"Items":list(reversed(item_list))} 
+            # Menu Heirarchy rules
+            error = False
+            match block_name:
+                case 'Menu':
+                    error = last_block_name in ('Item', 'Colors')
+                case 'Item':
+                    error = last_block_name in ('Colors', 'Item') 
+                case 'Colors':
+                    error = last_block_name in ('Colors',)
 
-            # Reset Tracked Structures
-            menu_id = ''
-            menu_dict = {}
-            item_list = []
+            if error:
+                raise SyntaxError(f"{block_name} cannot be a descendent of {last_block_name}.")
 
-        # Add item to item_list
-        elif line.strip().startswith("Item:"):
-            if not item_key:
-                raise AttributeError("Missing Item 'key' field in {file}")
-            if not item_message:
-                raise AttributeError("Missing Item 'message' field in {file}")
-
-            item_list.append([item_key, item_message] + list(reversed(func_list)))
-
-            func_list = []
-            item_key = ''
-            item_message = ''
-
-        elif line.startswith(' ' * 8):
-            # Construct menu item
-            match = re.match(split_pattern, line.strip())
-            if match is None:
-                raise ValueError(f"Invalid syntax (expected 'key: value'): {line.strip()}")
-            split_col = match.groups()
-            name = split_col[0].strip()
-            val = split_col[1].strip()
-            val = strip_quotes(name, val)
-
-            if name == "key":
-                item_key = val
-            elif name == "message":
-                item_message = val
-            elif name == "func":
-                func_list.append(val)
-
-        elif line.startswith(' ' * 4):
-            # Set attribute to menu_dict
-            match = re.match(split_pattern, line.strip())
-
-            if match is None:
-                raise ValueError(f"Invalid syntax (expected 'key: value'): {line.strip()}")
+            # Go to next stack
+            sub_block, n = _parse_block(lines, n + 1, expected_indent + 1, block_name)
             
-            split_col = match.groups()
-            name = split_col[0].strip()
-            val = split_col[1].strip()
-            val = strip_quotes(name, val)
-
-            if name == "id":
-                # Set menu_id to hash menu_dict in struct_
-                menu_id = val
+            # Add allowed duplicate BLOCKS here
+            if block_name in { "Menu", "Item" }:
+                if not block_name in block:
+                    block[block_name] = []
+                block[block_name].append(sub_block)
             else:
-                # Otherwise, set the attribute
-                menu_dict[name] = val
+                if not block_name in block:
+                    block[block_name] = sub_block
+                else:
+                    raise AttributeError(f"Duplicate block: {block_name}")
+        
+        # Key:value pair
+        elif ':' in stripped:
+            key, value = _parse_kv_line(stripped, last_block_name)
+            
+            # Add allowed duplicate KEYS here
+            if key in { "func" }:
+                if not key in block:
+                    block[key] = []
+                block[key].append(value)
+            else:
+                if not key in block:
+                    block[key] = value
+                else:
+                    raise AttributeError(f"Duplicate attribute: {key}")
+            
+            n += 1
 
-    return struct_
+        else:
+            raise SyntaxError(f"Unrecognized format: \n{stripped}")
+
+    return block, n
 
 
-def strip_quotes(key: str, val: str) -> str:
+def _get_indent(line: str) -> int:
     """
-    Enforces using single or double quotes for representing string values.
-    """
-    # manage the set of attribute keys NOT to enforce quotes here
-    unquoted_keys = {'id', 'exit_to', 'end_to', 'arg_to', 'escape_to', 'func', 'clear_readout', 'arg_to_first'}
+    Get indentation level.
 
-    if key not in unquoted_keys:
-        if val[0] != val[-1] or val[0] not in ('"', "'"):
+    Counts leading spaces and divides by 4 (1 level = 4 spaces).
+    """
+    if not line or not line[0].isspace():
+        return 0
+    spaces = len(line) - len(line.lstrip(' '))
+    return spaces // 4
+
+
+def _parse_kv_line(line: str, block_name: str) -> tuple[str, str]:
+    """
+    Parse a key:value line.
+    
+    Handles quoted strings (both single and double quotes).
+    Returns (key, value) where value is unquoted if it was quoted.
+    """
+    #split_pattern = r"([^:]+):([^:]+.*)"
+    match = re.match(r'([^:]+):\s*(.*)', line)
+    if not match:
+        raise ValueError(f"Invalid key:value syntax: {line}")
+    
+    key = match.group(1).strip()
+    value = match.group(2).strip()
+    
+    # Enforce quoting conventions
+    check_quotes(key, value, block_name)    
+    
+    return key, value
+
+
+def check_quotes(key: str, val: str, block_name: str):
+    """Enforce quotes for string values."""
+
+    # Keys that are expected to be quoted
+    quoted_keys = { 'name', 'exit_key', 'exit_message', 'empty_message'} \
+    | ({ 'key', 'message' } if block_name in { "Item" } else set())
+
+    if key in quoted_keys:
+        if not ((val.startswith('"') and val.endswith('"')) or
+                (val.startswith("'") and val.endswith("'"))):
             raise TypeError(
-                "Value {" + val + "} must be a valid string."
-                f"Try \"{val}\""
+                f"Value '{val}' must be a quoted string. "
+                f'Try "{val}"'
             )
-        return val[1:-1] 
-    else:
-        return val

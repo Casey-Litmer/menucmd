@@ -1,6 +1,7 @@
 from ..src.builtins import *
 import inspect
-from .menu_dict import MenuDict
+from .MenuDict import MenuDict
+from pprint import pprint
 
 
 # SHORTHANDS
@@ -10,12 +11,22 @@ self = Menu.self
 B = Bind
 
 
-def convert_attr_types(static_attrs: dict) -> None:
+def convert_static_attr_types(static_attrs: dict) -> None:
     """Converts Non-String types"""
-    if static_attrs.get('clear_readout'):
-        static_attrs['clear_readout'] = {'True': True, 'False': False}[static_attrs['clear_readout']]
-    if static_attrs.get('arg_to_first'):
-        static_attrs['arg_to_first'] = {'True': True, 'False': False}[static_attrs['arg_to_first']]
+    for key, val in static_attrs.items():
+        if key not in { 'Colors' }:
+            static_attrs[key] = eval(val)
+
+    if static_attrs.get('Colors'):
+        # Rename key for menu args
+        static_attrs['colors'] = convert_colors(static_attrs['Colors'], "Menu")
+        del static_attrs['Colors']
+
+
+def convert_colors(colors: dict, block: str) -> MenuColors | ItemColors:
+    """Evaluates ANSI color schemes"""
+    scheme = {'Menu': MenuColors, 'Item': ItemColors}[block]
+    return scheme(**dict([k, eval(v)] for k, v in colors.items()))
 
 
 def retrieve_globals(target_globals):
