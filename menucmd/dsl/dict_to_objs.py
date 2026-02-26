@@ -31,7 +31,7 @@ def dict_to_objs(struct_: dict) -> MenuDict:
     menus = []
 
     if not "Menu" in struct_:
-        raise RuntimeError("'Menu' must be present in the outer struct!")
+        raise RuntimeError("'Menu' must be present in the outer struct")
 
     #Initlialize all menus with only static attributes to a dict indexed by 'ID'
     for attrs in struct_["Menu"]:
@@ -70,29 +70,28 @@ def dict_to_objs(struct_: dict) -> MenuDict:
 
         for name, attr in active_attributes.items():
             if name == "Item":
-                #attr = (['key', 'message', "func1(*args)", "func2(*args),..."],...)
-                append_menu_items(menu, attr)
+                _append_menu_items(menu, attr)
             else:
-                #Adds the rest: arg_to, exit_to, etc
+                # Adds the rest: arg_to, exit_to, etc
                 setattr(menu, name, eval(attr))
 
-        #finally, update the exit item and apply matching keywords
+        # finally, update the exit item and apply matching keywords
         menu.ch_exit()
         menu.apply_matching_keywords()
 
     return menus
 
 
-def append_menu_items( menu: Menu, items: list[dict],):
+def _append_menu_items( menu: Menu, items: list[dict],):
     """
     Converts "Item" list into Items and appends to menu.
     [{key, message, funcs, Colors}, ...] -> Item
     """
     for item in items:
         if not item.get('key'):
-            raise KeyError("Menu must have 'key' attribute")
+            raise KeyError("Item must have 'key' attribute")
 
-        funcs = [parse_funcargs(funcargs) for funcargs in item['func']] if item.get('func') else []
+        funcs = [_parse_funcargs(funcargs) for funcargs in item['func']] if item.get('func') else []
         colors = convert_colors(item['Colors'], "Item") if item.get('Colors') else None  
         
         # Append Items
@@ -102,32 +101,39 @@ def append_menu_items( menu: Menu, items: list[dict],):
         )) 
         
 
-def parse_funcargs(funcargs: str) -> tuple[Any, tuple]:
-    """
-        "func(arg1, arg2,...)" -> (func, (arg1, arg2))
-    """
-    #Extract function.  Works with (lambda:(...))
+def _parse_funcargs(funcargs: str) -> tuple[Any, tuple]:
+    """"func(arg1, arg2,...)" -> (func, (arg1, arg2))"""
+    # Extract function.  Works with (lambda:(...))
     func_args_split = funcargs.split('(')
-    func = None
-    args = ()
     n_closed_par = 0
 
-    try:
-        for n, x in enumerate(func_args_split[::-1]):
-            n_closed_par += x.count(')')
-            if n_closed_par == n+1:
-                func = eval("(".join(func_args_split[:-n-1]))
-                
-                # Force args to be a tuple (,) prevents double wrap reduction
-                arg_str = "(" + "(".join(func_args_split[-n-1:])
+    # Split func and args
+    for n, x in enumerate(func_args_split[::-1]):
+        n_closed_par += x.count(')')
+        if n_closed_par == n+1:
+            func_str = "(".join(func_args_split[:-n-1])
+            arg_str = "(" + "(".join(func_args_split[-n-1:])
+
+            # Eval Func
+            func = eval(func_str)
+            
+            # Eval Args
+            try:
                 args = () if arg_str.strip() == "()" \
                     else eval(arg_str.strip()[:-1] + ",)")
-                break
+                
+            # Menu.kwargs reminder
+            except SyntaxError as e:
+                if '=' in arg_str and '==' not in arg_str and ':=' not in arg_str:
+                    raise SyntaxError(
+                        f"Invalid keyword argument syntax in '{funcargs}'.\n"
+                        f"All keyword arguments must be wrapped in 'kwargs()'.\n"
+                        f"      Ex: func(arg1, kwargs(key=value))"
+                    ) from e
+                raise SyntaxError from e
 
-        if not func:
-            raise SyntaxError
+            # Return tuple
+            return (func, args)
 
-    except SyntaxError as e:
-        raise SyntaxError(f"Unbalanced parenthesis in '{funcargs}'") from e
-
-    return (func, args)
+    # Parenthesis Error
+    raise SyntaxError(f"Unbalanced parenthesis in '{funcargs}'")

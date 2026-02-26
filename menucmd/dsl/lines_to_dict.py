@@ -40,12 +40,9 @@ def lines_to_dict(lines: list[str]) -> dict:
     }
     """
     lines = [line for line in lines if line.strip() and not line.strip().startswith('#')]
-
     if not lines:
         return {}
-    
     result, _ = _parse_block(lines, 0, 0)
-    
     return result
 
 
@@ -123,25 +120,28 @@ def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_bl
                     block[key] = value
                 else:
                     raise AttributeError(f"Duplicate attribute: {key}")
-            
             n += 1
-
         else:
             raise SyntaxError(f"Unrecognized format: \n{stripped}")
 
     return block, n
 
 
-def _get_indent(line: str) -> int:
-    """
-    Get indentation level.
+def check_quotes(key: str, val: str, block_name: str):
+    """Enforce quotes for string values."""
 
-    Counts leading spaces and divides by 4 (1 level = 4 spaces).
-    """
-    if not line or not line[0].isspace():
-        return 0
-    spaces = len(line) - len(line.lstrip(' '))
-    return spaces // 4
+    # Keys that are expected to be quoted
+    quoted_keys = { 'exit_key', 'exit_message', 'empty_message'} \
+    | ({ 'key', 'message' } if block_name in { "Item" } else set()) \
+    | ({ 'name' } if block_name in { "Menu" } else set())
+
+    if key in quoted_keys:
+        if not ((val.startswith('"') and val.endswith('"')) or
+                (val.startswith("'") and val.endswith("'"))):
+            raise TypeError(
+                f"Value '{val}' must be a quoted string. "
+                f'Try "{val}"'
+            )
 
 
 def _parse_kv_line(line: str, block_name: str) -> tuple[str, str]:
@@ -165,18 +165,13 @@ def _parse_kv_line(line: str, block_name: str) -> tuple[str, str]:
     return key, value
 
 
-def check_quotes(key: str, val: str, block_name: str):
-    """Enforce quotes for string values."""
+def _get_indent(line: str) -> int:
+    """
+    Get indentation level.
 
-    # Keys that are expected to be quoted
-    quoted_keys = { 'exit_key', 'exit_message', 'empty_message'} \
-    | ({ 'key', 'message' } if block_name in { "Item" } else set()) \
-    | ({ 'name' } if block_name in { "Menu" } else set())
-
-    if key in quoted_keys:
-        if not ((val.startswith('"') and val.endswith('"')) or
-                (val.startswith("'") and val.endswith("'"))):
-            raise TypeError(
-                f"Value '{val}' must be a quoted string. "
-                f'Try "{val}"'
-            )
+    Counts leading spaces and divides by 4 (1 level = 4 spaces).
+    """
+    if not line or not line[0].isspace():
+        return 0
+    spaces = len(line) - len(line.lstrip(' '))
+    return spaces // 4
