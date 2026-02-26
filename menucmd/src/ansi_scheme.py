@@ -6,7 +6,7 @@ from .colors import Colors
 @dataclass
 class ItemColors():
     key: Optional[str] = None
-    key_dash: Optional[str] = None
+    dash: Optional[str] = None
     message: Optional[str] = None
 
 @dataclass
@@ -17,7 +17,7 @@ class MenuColors(ItemColors):
 
     # Global Item Defaults
     key: Optional[str] = Colors.BLINK + Colors.BOLD
-    key_dash: Optional[str] = Colors.BOLD
+    dash: Optional[str] = Colors.BOLD
     message: Optional[str] = Colors.ITALIC
 
     

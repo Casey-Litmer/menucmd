@@ -256,12 +256,12 @@ class Menu():
         """Updates menu lists with new Item"""
         colors = self.colors.merge(item.colors)
         key_ansi = colors.key
-        key_dash_ansi = colors.key_dash
+        dash_ansi = colors.dash
         message_ansi = colors.message
 
         self.menu_display_list = list_union(
             self.menu_display_list, 
-            [f"{key_ansi}[{item.key}]\x1b[0m{key_dash_ansi}-\x1b[0m {message_ansi}{item.message}\x1b[0m"]
+            [f"{key_ansi}[{item.key}]\x1b[0m{dash_ansi}-\x1b[0m {message_ansi}{item.message}\x1b[0m"]
         )
         self.menu[item.key] = item.funcs
 
