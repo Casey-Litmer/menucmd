@@ -15,6 +15,9 @@ class MenuDict(dict):
     def __getitem__(self, item):
         return self.menus[item]
     
+    def get(self, item):
+        return self.menus[item]
+    
     def __iter__(self):
         return iter(self.menus)
     

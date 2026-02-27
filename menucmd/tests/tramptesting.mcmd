@@ -13,20 +13,20 @@ Menu:
     Item:
         key: "e"
         message: "Test Lazy Eval"
-        func: lazy_menu()
+        func: open_menu("lazy_menu")
     Item:
         key: "b"
         message: "Test Builtins"
-        func: builtin_menu()
+        func: open_menu("builtin_menu")
     Item:
         key: "d"
         message: "Test Dynamic Menus"
-        func: dynamic_menu()
+        func: open_menu("dynamic_menu")
 
 Menu:
     name: "Lazy Eval"
     id: lazy_menu
-    exit_to: main_menu
+    exit_to: to_menu('main_menu')
 
     Colors:
         key: Colors.LIGHT_BLUE + Colors.BOLD
@@ -71,7 +71,7 @@ Menu:
 Menu:
     name: "Builtins"
     id: builtin_menu
-    exit_to: main_menu
+    exit_to: to_menu('main_menu')
 
     Colors:
         key: Colors.CYAN + Colors.BOLD
@@ -100,7 +100,7 @@ Menu:
 Menu:
     name: "Dynamic Menus"
     id: dynamic_menu
-    exit_to: main_menu
+    exit_to: to_menu('main_menu')
 
     Colors:
         key: Colors.CYAN + Colors.BOLD
@@ -120,7 +120,7 @@ Menu:
 Menu:
     name: "Menu_A"
     id: menu_A
-    exit_to: lazy_menu
+    exit_to: to_menu('lazy_menu')
     end_to: Menu.exit_to
 
     Colors:
@@ -136,7 +136,7 @@ Menu:
 Menu:
     name: "Menu_B"
     id: menu_B
-    exit_to: dynamic_menu
+    exit_to: to_menu('dynamic_menu')
     escape_to: Menu.exit_to
 
     Colors:
