@@ -8,8 +8,13 @@ def main():
     result = Menu.result
     kwargs = Menu.kwargs
 
-    main_menu = Menu(name = "Hub", exit_key = "x", colors=MenuColors(key=Colors.LIGHT_BLUE + Colors.BOLD), exit_colors=ItemColors(key=Colors.RED))
-    lazy_menu = Menu(name = "Lazy Eval", exit_to = main_menu, colors=MenuColors(key=Colors.LIGHT_BLUE + Colors.BOLD))
+    Menu.set_global_colors(
+        colors=MenuColors(key=Colors.LIGHT_BLUE + Colors.BOLD), 
+        exit_colors=ItemColors(key=Colors.RED)
+    )
+
+    main_menu = Menu(name = "Hub", exit_key = "x")
+    lazy_menu = Menu(name = "Lazy Eval", exit_to = main_menu)
     builtin_menu = Menu(name = "Builtins", exit_to = main_menu, colors=MenuColors(key=Colors.CYAN  + Colors.BOLD))
     dynamic_menu = Menu(name = "Dynamic Menus", exit_to = main_menu, colors=MenuColors(key=Colors.CYAN + Colors.BOLD))
 
@@ -82,7 +87,7 @@ def main():
         Item(key="s", message="Menu.self usage: insert new item here", funcs=[
             (Menu.insert, (Menu.self, 0, 
                 Item(key="*", message="Nice Job!", funcs=[(main_menu, "*")], 
-                     colors=ItemColors(key=Colors.RED + Colors.BOLD)
+                     colors=ItemColors(key=Colors.GREEN + Colors.BOLD)
                 )
                 # LIMITATION:
                 # In order to have dynamic reference to other menus, the functions

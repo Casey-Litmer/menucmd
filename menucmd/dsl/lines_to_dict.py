@@ -46,7 +46,7 @@ def lines_to_dict(lines: list[str]) -> dict:
     return result
 
 
-def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_block_name: str = '') -> tuple[dict, int]:
+def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_block_name: str = '_Top') -> tuple[dict, int]:
     """
     Recursively parse all lines at a given indent level.
     
@@ -74,16 +74,16 @@ def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_bl
             block_name = stripped[:-1]
 
             # First block must be Menu
-            if block_name != 'Menu' and n == 0:
-                raise SyntaxError(f"{block_name} must be a descendent of Menu")
+            #if block_name != 'Menu' and n == 0:
+            #    raise SyntaxError(f"{block_name} must be a descendent of Menu")
             
             # Menu Heirarchy rules
             error = False
             match block_name:
                 case 'Menu':
-                    error = last_block_name in { 'Colors', 'Item', 'ExitColors', 'Menu'}
+                    error = last_block_name in { 'Colors', 'Item', 'ExitColors', 'Menu' }
                 case 'Item':
-                    error = last_block_name in { 'Colors', 'Item', 'ExitColors' } 
+                    error = last_block_name in { 'Colors', 'Item', 'ExitColors', "_Top" } 
                 case 'Colors':
                     error = last_block_name in { 'Colors', 'ExitColors' }
                 case 'ExitColors':
