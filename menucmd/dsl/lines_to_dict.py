@@ -133,7 +133,7 @@ def check_quotes(key: str, val: str, block_name: str):
     # Keys that are expected to be quoted
     quoted_keys = { 'exit_key', 'exit_message' } \
     | ({ 'key', 'message', 'empty_message' } if block_name in { "Item" } else set()) \
-    | ({ 'name', 'empty_message' } if block_name in { "Menu" } else set())
+    | ({ 'name', 'empty_message', 'invalid_key' } if block_name in { "Menu" } else set())
 
     if key in quoted_keys:
         if not ((val.startswith('"') and val.endswith('"')) or

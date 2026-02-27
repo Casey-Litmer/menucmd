@@ -13,7 +13,7 @@ class ItemColors():
 class MenuColors(ItemColors):
     name: Optional[str] = Colors.BOLD
     empty_message: Optional[str] = Colors.WHITE
-    invalid_selection: Optional[str] = Colors.LIGHT_RED + Colors.ITALIC
+    invalid_key: Optional[str] = Colors.LIGHT_RED + Colors.ITALIC
 
     # Global Item Defaults
     key: Optional[str] = Colors.BLINK + Colors.BOLD

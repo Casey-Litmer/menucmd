@@ -12,7 +12,8 @@ from colorama import just_fix_windows_console
 just_fix_windows_console()
 
 #==================================================================================
-#Menu Class
+# Menu Class
+#==================================================================================
 
 class _Expand(tuple):
     """Internal wrapper to mark an iterable for expansion as function arguments."""
@@ -23,11 +24,11 @@ class _Kwargs(dict):
     pass
 
 class Menu():
-    #Matching Keywords
+    # Matching Keywords
     exit_to = object()  #Use as keyword for end_to to match exit_to:  Menu(end_to = Menu.exit_to)
     end_to = object()   #
 
-    #Keyword Objects
+    # Keyword Objects
     result = Result(-1)
     escape = object()
     self = object()
@@ -86,9 +87,6 @@ class Menu():
         self.ch_exit()
         #TODO: group together?
 
-        #Tracked attributes for current result chain
-        self.tracked_attributes = {}
-
     #==================================================================================
     # Protocall
     #==================================================================================
@@ -100,70 +98,70 @@ class Menu():
 
         Menu.result[0] == arg
         """
-        #Reset tracked attributes
-        self.tracked_attributes = {}
-
-        #Evaluate arg_to and add 0th result (Before selection)
+        # Evaluate arg_to and add 0th result (Before selection)
         if self.arg_to_first:
             result = maybe_arg(self.arg_to)(arg)
             results = [result]
 
-        #List state logic
+        # List state logic
         if not self.menu_display_list[:-1]:
-            #Exit on empty menu
+            # Exit on empty menu
             empty_ansi = self.colors.empty_message
             print(f"{empty_ansi}{self.empty_message}\x1b[0m")
             selection = self.exit_key
         else:
-            #Print Menu And Get Input
+            # Print Menu And Get Input
             name_ansi = self.colors.name
             show = f"\n{name_ansi}{self.name}\x1b[0m\n" + "\n".join(self.menu_display_list) + "\n"
             print(f"{show}\x1b[0m", end='')
             printed_lines = show.count('\n') + 1
             selection = input()
 
-            #Clear previous menu
+            # Clear previous menu
             if self.clear_readout:
                 Menu.clear_lines(printed_lines)
 
-        #Refresh Menu On Invalid Input
+        # Refresh Menu On Invalid Input
         if selection not in self.menu.keys():
-            invalid_ansi = self.colors.invalid_selection
-            print(f"{invalid_ansi}--*Invalid Selection*--\x1b[0m")
+            invalid_ansi = self.colors.invalid_key
+            print(f"{invalid_ansi}{self.invalid_key}\x1b[0m")
             return self(arg)
 
-        #Select Item
+        # Select Item
         func_chain = self.menu[selection]
 
-        #Exit menu if exit_key pressed
+        # Exit menu if exit_key pressed
         if selection == self.exit_key:
             return maybe_arg(func_chain[0][0])(arg)
 
-        #Evaluate arg_to and add 0th result (After selection)
+        # Evaluate arg_to and add 0th result (After selection)
         if not self.arg_to_first:
             result = maybe_arg(self.arg_to)(arg)
             results = [result]
 
-        #Evaluate Function Chain
+        # Init Tracked Attributes
+        tracked_attributes = {}
+
+        # Evaluate Function Chain
         for pair in func_chain:
-            #Get func/args pair
+            # Get func/args pair
             func = pair[0]
             args = tupler(pair[1])
 
-            #Replace Results and Separate args/kwargs
-            func, args, kwargs = self.replace_keywords(func, args, results)
+            # Replace Results and Separate args/kwargs
+            func, args, kwargs = self.replace_keywords(func, args, results, tracked_attributes)
 
-            #Evaluate Function
+            # Evaluate Function
             result = Bind.lazy_eval(func, args, kwargs)
 
-            #Manual escape
+            # Manual escape
             if result is Menu.escape:
                 return maybe_arg(self.escape_to)(arg)
 
-            #End Loop
+            # End Loop
             results.append(result)
 
-        #Go to end_to if final value is None
+        # Go to end_to if final value is None
         return result if result is not None else maybe_arg(self.end_to)(arg)
 
         #Maybe do this in the future for None returns:
@@ -174,7 +172,7 @@ class Menu():
         #using inline functions to switch between a result return and a None return
 
 
-    def replace_keywords(self, func, args: tuple, results: list) -> tuple:
+    def replace_keywords(self, func, args: tuple, results: list, tracked_attributes: dict) -> tuple:
         """Replaces all inline self references with the current menu.
         Replaces all Menu.result objects with function results from the chain.
 
@@ -182,34 +180,34 @@ class Menu():
 
         'args' may also include all kwargs distinguished by the Menu.kwargs wrapper.
         """
-        #Replace self reference
+        # Replace self reference
         func = replace_value_nested(tupler(func), Menu.self, self)[0]
         args = replace_value_nested(tupler(args), Menu.self, self)
 
-        #Replace Result Keywords by Attribute
-        for tag, val in self.tracked_attributes.items():
+        # Replace Result Keywords by Attribute
+        for tag, val in tracked_attributes.items():
             func = replace_value_nested(tupler(func), Result(0).__getattr__(tag), val)[0]
             args = replace_value_nested(tupler(args), Result(0).__getattr__(tag).expand(), maybe_type(_Expand, val))
             args = replace_value_nested(tupler(args), Result(0).__getattr__(tag), val)
 
-        #Replace Result Keywords by Position
+        # Replace Result Keywords by Position
         N = len(results)
         for n in range(-N, N):
-            #Detect if a result has an attribute and add first declaration to tracked attributes
+            # Detect if a result has an attribute and add first declaration to tracked attributes
             def track_attr(R, value):
-                if R.__attr__ is not None and R.__attr__ not in self.tracked_attributes.keys():
-                    self.tracked_attributes[R.__attr__] = value
+                if R.__attr__ is not None and R.__attr__ not in tracked_attributes.keys():
+                    tracked_attributes[R.__attr__] = value
                 return value
 
             func = replace_value_nested(tupler(func), Result(n), results[n], callback= track_attr)[0]
             args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(_Expand, results[n]), callback= track_attr)
             args = replace_value_nested(tupler(args), Result(n), results[n], callback= track_attr)
 
-        #Separate args/kwargs
+        # Separate args/kwargs
         kwargs = dict_union(tupler(x for x in args if isinstance(x, Menu.kwargs)))
         args = tupler(x for x in args if not isinstance(x, Menu.kwargs))
 
-        #'Uninterprets' tupler for expanded results.  Allows inline notation for (*args) ~ result.expand()
+        # 'Uninterprets' tupler for expanded results.  Allows inline notation for (*args) ~ result.expand()
         args = tuple(Menu.expand_in_place(args))
 
         return (func, args, kwargs)
@@ -325,13 +323,13 @@ class Menu():
         """
         new = []
         for x in A:
-            #Append all elements if marked as 'expanded'
+            # Append all elements if marked as 'expanded'
             if isinstance(x, _Expand):
                 new += list(x)
-            #Run in nesting (recursion)
+            # Run in nesting (recursion)
             elif isinstance(x, tuple | list):
                 new += [Menu.expand_in_place(x)]
-            #Do nothing
+            # Do nothing
             else:
                 new += [x]
         return type(A)(new)

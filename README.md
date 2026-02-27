@@ -43,6 +43,7 @@ Use it for quick debugging utilities, as a CLI frontend for scripts, or whenever
    - [Indexing and Slicing](#menu-indexing-and-slicing)
 
 ### 6. Other Menu Attributes
+   - [`invalid_key` and `empty_message`](#invalid_key-and-empty_message)
    - [Colors and Appearance: `MenuColors`, `ItemColors`, `Colors`, `exit_colors`](#colors-and-appearance-menucolors-itemcolors-colors-exit_colors)
    - [`Menu.kwargs`](#menukwargs)
    - [Early Exit: `escape`, `escape_to`](#early-exit-escape-escape_to)
@@ -247,6 +248,7 @@ menu1()
 
 When the user selects `a` then exits from `menu2`, control returns to `menu1` because of `exit_to=menu1`.
 
+----
 ### Passing Data Between Menus
 
 A menu can call another and pass data via `result`. To send the current menu argument into the target menu, pass `result` as the argument when calling it:
@@ -302,7 +304,6 @@ main_menu.append(
 If the menu does not invoke `end_to`, it will return the *last return* in the chain directly.  This allows menus to compose like functions.  You can either use `end_to` to open another menu (commonly after a print statement), or transform the `None` value into something else for the return.
 
 ---
-
 ## 3. Function Composition
 
 ### Using the `Result` Object
@@ -383,7 +384,7 @@ Notes on naming:
 
 *Names are scoped to each menu item—each time an item runs, the names reset.*
 
--------
+----
 ### Expanding Results with `.expand()`
 
 When a function returns multiple values (tuple or list), you can "unpack" them as separate arguments using `expand()`:
@@ -515,6 +516,7 @@ lazy_func = B(print, "Hello")
 lazy_func()  # Now it prints
 ```
 
+----
 ### Nested Bind Objects
 
 Each level of nesting gets evaluated depth-first:
@@ -546,6 +548,7 @@ printer_fixed("hello")  # Prints: Message:  ("hello" ignored)
 
 `.fix()` toggles the wrapper into a fixed state so additional call-time args are ignored. This is useful when binding polymorphic functions (like `print`) or when you want a wrapper to always behave identically regardless of later calls.
 
+---
 ## 5. Menu Methods
 
 ### `append()`, `insert()`, `delete()`, `clear()`
@@ -561,6 +564,7 @@ menu.clear()                          # Remove all items (keeps exit key)
 
 *Note: These don't count the exit key in their position indexing.*
 
+----
 ### `ch_exit()`
 
 Change exit key properties after creation:
@@ -571,6 +575,7 @@ menu.ch_exit(exit_key="q", exit_message="quit", exit_to=other_menu)
 
 Only specified parameters are updated; omit any you don't want to change.
 
+----
 ### Menu Indexing and Slicing
 
 Access and slice menu items like lists:
@@ -585,6 +590,15 @@ menu[0] = new_item  # Replace item
 
 ## 6. Other Menu Attributes
 
+### `invalid_key` and `empty_message`
+
+Use `invalid_key` to set the message shown when the user presses an invalid key, and `empty_message` to override the text displayed when a menu has no entries. Example:
+
+```python
+menu = Menu(invalid_key="Invalid choice", empty_message="No entries")
+```
+
+----
 ### Colors and Appearance: `MenuColors`, `ItemColors`, `Colors`, `exit_colors`
 
 Style menus and items with ANSI escape codes. Three helper classes help you do this:
@@ -593,7 +607,7 @@ Style menus and items with ANSI escape codes. Three helper classes help you do t
 - `MenuColors`: a dataclass that defines default colors for menu elements.  Instantiate it and pass via the `colors` argument when creating a `Menu`.  Its fields include:
   - `name` – the menu title line.
   - `empty_message` – text shown when the menu has no entries.
-  - `invalid_selection` – message printed on bad keypress.
+  - `invalid_key` – message printed on bad keypress.
   - ***All fields in `ItemColors`**
 - `ItemColors`: a subset of `MenuColors` that overrides colors for individual items on an attribute‑by‑attribute basis.  Its fields include:
   - `key` - the item key
@@ -617,6 +631,7 @@ menu.append(
 
 In the example above the second item only overrides the `key` color, inheriting the other styles from `menu.colors`.
 
+----
 ### Menu.kwargs
 
 When a function needs keyword arguments, wrap them with `Menu.kwargs` (which is just a dict):
