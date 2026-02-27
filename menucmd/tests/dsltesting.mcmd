@@ -1,14 +1,13 @@
+Colors:
+    key: Colors.LIGHT_BLUE + Colors.BOLD
+
+ExitColors:
+    key: Colors.RED
+
 Menu:
     name: "Hub"
     id: main_menu
     exit_key: "x"
-
-    Colors:
-        key: Colors.LIGHT_BLUE + Colors.BOLD
-
-    ExitColors:
-        key: Colors.RED + Colors.BOLD
-        message: Colors.FAINT
 
     Item:
         key: "e"
@@ -22,19 +21,11 @@ Menu:
         key: "d"
         message: "Test Dynamic Menus"
         func: dynamic_menu()
-    Item:
-        key: "t"
-        message: "Return test"
-        func: B(tuple, Return(1,2,3))
-        func: print(result)
 
 Menu:
     name: "Lazy Eval"
     id: lazy_menu
     exit_to: main_menu
-
-    Colors:
-        key: Colors.LIGHT_BLUE + Colors.BOLD
 
     Item:
         key: "s"
@@ -118,7 +109,7 @@ Menu:
     Item:
         key: "s"
         message: "Menu.self usage: insert new item here"
-        func: Menu.insert(self, 0, Item(key="*", message="Nice Job!", funcs=[(main_menu, "*")], colors=ItemColors(key=Colors.RED + Colors.BOLD)))
+        func: Menu.insert(self, 0, Item(key="*", message="Nice Job!", funcs=[(main_menu, "*")], colors=ItemColors(key=Colors.GREEN + Colors.BOLD)))
 
 #==================================================================================
 

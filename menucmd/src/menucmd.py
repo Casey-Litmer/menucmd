@@ -11,6 +11,7 @@ from colorama import just_fix_windows_console
 
 just_fix_windows_console()
 
+
 #==================================================================================
 # Menu Class
 #==================================================================================
@@ -23,7 +24,7 @@ class _Kwargs(dict):
     """Wrapper for kwargs in menufunction composition"""
     pass
 
-class Menu():
+class Menu:
     # Matching Keywords
     exit_to = object()  #Use as keyword for end_to to match exit_to:  Menu(end_to = Menu.exit_to)
     end_to = object()   #
@@ -35,6 +36,17 @@ class Menu():
     kwargs = _Kwargs
     __END__ = type("Menu.__END__", (object,), {})  #Terminal Object
     id = lambda x:x                                #Identity morphism
+
+    # Default Colors
+    colors = MenuColors(
+        name = Colors.BOLD,
+        empty_message = Colors.WHITE,
+        invalid_key = Colors.LIGHT_RED + Colors.ITALIC,
+        key = Colors.BLINK + Colors.BOLD,
+        dash = Colors.BOLD,
+        message = Colors.ITALIC,
+    )
+    exit_colors = ItemColors()
 
     #==================================================================================
 
@@ -98,6 +110,9 @@ class Menu():
 
         Menu.result[0] == arg
         """
+        # Merge Colors
+        colors = Menu.colors.merge(self.colors)
+
         # Evaluate arg_to and add 0th result (Before selection)
         if self.arg_to_first:
             result = maybe_arg(self.arg_to)(arg)
@@ -111,7 +126,7 @@ class Menu():
             selection = self.exit_key
         else:
             # Print Menu And Get Input
-            name_ansi = self.colors.name
+            name_ansi = colors.name
             show = f"\n{name_ansi}{self.name}\x1b[0m\n" + "\n".join(self.menu_display_list) + "\n"
             print(f"{show}\x1b[0m", end='')
             printed_lines = show.count('\n') + 1
@@ -123,7 +138,7 @@ class Menu():
 
         # Refresh Menu On Invalid Input
         if selection not in self.menu.keys():
-            invalid_ansi = self.colors.invalid_key
+            invalid_ansi = colors.invalid_key
             print(f"{invalid_ansi}{self.invalid_key}\x1b[0m")
             return self(arg)
 
@@ -266,13 +281,27 @@ class Menu():
             return new_menu
         return self.menu_item_list[idx]
     
+
+    @classmethod
+    def set_global_colors(
+        cls, 
+        colors: Optional[MenuColors] = None, 
+        exit_colors: Optional[ItemColors] = None
+    ):
+        if colors:
+            cls.colors = cls.colors.merge(colors)
+        if exit_colors:
+            cls.exit_colors = cls.exit_colors.merge(exit_colors)
+    
     #==================================================================================
     # Updates
     #==================================================================================
 
     def update_menu_lists(self, item: Item):
         """Updates menu lists with new Item"""
-        colors = self.colors.merge(item.colors)
+        if self.name=='Hub':
+            print(Menu.colors.merge(self.colors))
+        colors = Menu.colors.merge(self.colors).merge(item.colors)
         key_ansi = colors.key
         dash_ansi = colors.dash
         message_ansi = colors.message
@@ -289,9 +318,11 @@ class Menu():
         self.exit_to = exit_to if exit_to else self.exit_to
         self.exit_key = exit_key if exit_key else self.exit_key
         self.exit_message = exit_message if exit_message else self.exit_message
+        colors = Menu.exit_colors.merge(self.exit_colors)
+
         self.exit = Item(
             key=self.exit_key, message=self.exit_message, 
-            funcs=[(self.exit_to, ())], colors=self.colors.merge(self.exit_colors)
+            funcs=[(self.exit_to, ())], colors=colors
         )
         self.append()
 

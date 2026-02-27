@@ -34,8 +34,14 @@ def dict_to_objs(struct_: dict) -> MenuDict:
 
     if not "Menu" in struct_:
         raise RuntimeError("'Menu' must be present in the outer struct")
+    
+    # Set Global Colors
+    if global_colors := struct_.get("Colors"):
+        Menu.set_global_colors(colors=convert_colors(global_colors, "Menu")) #type: ignore
+    if global_colors := struct_.get("ExitColors"):
+        Menu.set_global_colors(exit_colors=convert_colors(global_colors, "ExitColors"))
 
-    #Initlialize all menus with only static attributes to a dict indexed by 'ID'
+    # Initlialize all menus with only static attributes to a dict indexed by 'ID'
     for attrs in struct_["Menu"]:
         # Require id
         if not attrs.get('id'):
@@ -61,11 +67,11 @@ def dict_to_objs(struct_: dict) -> MenuDict:
     # Convert list to attributable dict: {menu_id: Menu}
     menus = MenuDict(menus)
 
-    #Add menu ids to global pointers and retrieve caller globals
+    # Add menu ids to global pointers and retrieve caller globals
     cannonize_menu_ids(menus, globals())
     retrieve_globals(globals())
 
-    #Set all non-static attributes and convert 'ID' references to pointers
+    # Set all non-static attributes and convert 'ID' references to pointers
     for menu_id, menu, attrs in zip(menus.keys(), menus.values(), struct_["Menu"]):
         # Get all remaining attributes                            
         active_attributes = dict_compliment(attrs, STATIC_ATTRS)
