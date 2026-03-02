@@ -1,4 +1,3 @@
-from ..builtins.builtins import *
 from .menu_dict import MenuDict
 from .lines_to_dict import lines_to_dict
 from .dict_to_objs import dict_to_objs

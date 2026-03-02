@@ -1,6 +1,6 @@
 import sys
 from copy import copy
-from dataclasses import dataclass
+from dataclasses import make_dataclass
 from typing import Any
 from macrolibs.typemacros import tupler, dict_union, list_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, maybe_type
@@ -13,29 +13,9 @@ from colorama import just_fix_windows_console
 
 just_fix_windows_console()
 
-
 #==================================================================================
 # Menu Class
 #==================================================================================
-
-class _Expand(tuple):
-    """Internal wrapper to mark an iterable for expansion as function arguments."""
-    pass
-
-class _Kwargs(dict):
-    """Wrapper for kwargs in menufunction composition"""
-    pass
-
-@dataclass
-class _RunMenu:
-    """Return this to run a new menu in the call stack"""
-    menu: "Menu"
-    arg: Any
-
-@dataclass 
-class _RunSelf:
-    """Return this to run self in the call stack"""
-    arg: Any
 
 class Menu:
     # Matching Keywords
@@ -46,13 +26,16 @@ class Menu:
     result = Result(-1)
     escape = object()
     self = object()
-    kwargs = _Kwargs
     __END__ = type("Menu.__END__", (object,), {})  #Terminal Object
     id = lambda x:x                                #Identity morphism
 
+    # Wrappers
+    _expand = type("Menu.expand", (tuple,), {})
+    kwargs = type("Menu.kwargs", (dict,), {})
+
     # Messages
-    __RUNMENU__ = _RunMenu
-    __RUNSELF__ = _RunSelf
+    __RUNMENU__ = make_dataclass("Menu.__RUNMENU__", [("menu", "Menu"), ("arg", Any)])
+    __RUNSELF__ = make_dataclass("Menu.__RUNSELF__", [("arg", Any)])
 
     # Default Colors
     colors = MenuColors(
@@ -130,12 +113,10 @@ class Menu:
             if isinstance(menu_result, Menu.__RUNMENU__):
                 current_menu = menu_result.menu
                 current_arg = menu_result.arg
-                continue
             elif isinstance(menu_result, Menu.__RUNSELF__):
                 current_arg = menu_result.arg
-                continue
-
-            return menu_result
+            else: 
+                return menu_result
 
     #==================================================================================
     # Protocall
@@ -154,6 +135,9 @@ class Menu:
         # Evaluate arg_to and add 0th result (Before selection)
         if self.arg_to_first:
             result = maybe_arg(self.arg_to)(arg)
+            self.check_banned_self_messages(result, "arg_to")
+            if result is Menu.__RUNMENU__:
+                return result
             results = [result]
 
         # List state logic
@@ -190,6 +174,9 @@ class Menu:
         # Evaluate arg_to and add 0th result (After selection)
         if not self.arg_to_first:
             result = maybe_arg(self.arg_to)(arg)
+            self.check_banned_self_messages(result, "arg_to")
+            if result is Menu.__RUNMENU__:
+                return result
             results = [result]
 
         # Init Tracked Attributes
@@ -207,7 +194,7 @@ class Menu:
             # Evaluate Function
             result = Bind.lazy_eval(func, args, kwargs)
 
-            # Restart Callstack 
+            # Restart Callstack on Message 
             if result is Menu.__RUNMENU__:
                 return result
 
@@ -244,7 +231,7 @@ class Menu:
         # Replace Result Keywords by Attribute
         for tag, val in tracked_attributes.items():
             func = replace_value_nested(tupler(func), Result(0).__getattr__(tag), val)[0]
-            args = replace_value_nested(tupler(args), Result(0).__getattr__(tag).expand(), maybe_type(_Expand, val))
+            args = replace_value_nested(tupler(args), Result(0).__getattr__(tag).expand(), maybe_type(Menu._expand, val))
             args = replace_value_nested(tupler(args), Result(0).__getattr__(tag), val)
 
         # Replace Result Keywords by Position
@@ -257,7 +244,7 @@ class Menu:
                 return value
 
             func = replace_value_nested(tupler(func), Result(n), results[n], callback= track_attr)[0]
-            args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(_Expand, results[n]), callback= track_attr)
+            args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(Menu._expand, results[n]), callback= track_attr)
             args = replace_value_nested(tupler(args), Result(n), results[n], callback= track_attr)
 
         # Separate args/kwargs
@@ -280,7 +267,6 @@ class Menu:
         --*{forces exit key to the end of the list}*--
         """
         Menu.check_item_type(*items)
-
         self.menu_display_list = self.menu_display_list[:-1]
         self.menu_item_list = self.menu_item_list[:-1]
 
@@ -302,7 +288,6 @@ class Menu:
         ('key', 'message', (func1, (*args1), func2, (*args2),...))
         """
         Menu.check_item_type(*items)
-
         _data = self.menu_item_list[:-1][:n] + [*items] + self.menu_item_list[:-1][n:]
         self.clear()
         self.append(*_data)
@@ -375,12 +360,11 @@ class Menu:
 
 
     def replace_self_references(self):
-        """Replaces Menu.self with self in builtin menu functions"""
-        menu_funcs = { 'arg_to': self.arg_to, 'end_to': self.end_to, 'escape_to': self.escape_to }
+        """Replaces Menu.self with __RUNSELF__ in *_to functions"""
+        menu_funcs = { 'end_to': self.end_to, 'escape_to': self.escape_to }
         for key in menu_funcs:
             x_to = menu_funcs[key]
-            replaced = self if x_to is Menu.self \
-                else replace_value_nested(tupler(x_to), Menu.self, self)[0]
+            replaced = replace_value_nested(tupler(x_to), Menu.self, lambda arg: Menu.__RUNSELF__(arg))[0]
             setattr(self, key, replaced)
 
     #==================================================================================
@@ -395,7 +379,7 @@ class Menu:
         new = []
         for x in A:
             # Append all elements if marked as 'expanded'
-            if isinstance(x, _Expand):
+            if isinstance(x, Menu._expand):
                 new += list(x)
             # Run in nesting (recursion)
             elif isinstance(x, tuple | list):
@@ -431,4 +415,9 @@ class Menu:
         for method in banned_methods:
             if banned_methods[method] is Menu.self:
                 raise RecursionError(f"Menu \"{self.name}\" {method} cannot be Menu.self")
+    
+
+    def check_banned_self_messages(self, arg, method):
+        if isinstance(arg, Menu.__RUNSELF__):
+            raise RecursionError(f"Menu \"{self.name}\" {method} cannot open self")
         

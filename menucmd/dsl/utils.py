@@ -1,6 +1,7 @@
-from ..builtins.builtins import *
 import inspect
 from .menu_dict import MenuDict
+from ..builtins.builtins import *
+from ..src.colors import Colors
 
 
 # SHORTHANDS
@@ -8,7 +9,7 @@ result = Menu.result
 kwargs = Menu.kwargs
 self = Menu.self
 B = Bind
-
+C = Colors
 
 def convert_static_attr_types(static_attrs: dict) -> None:
     """Converts Non-String types"""

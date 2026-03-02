@@ -1,17 +1,15 @@
 from macrolibs.typemacros import dict_intersect, dict_compliment
 from .menu_dict import MenuDict
+from ..src.menucmd import Menu
+from ..src.menu_hooks import *
 from ..src.item import Item
 from ..builtins.builtins import *
-from ..builtins.returns import *
 from .utils import *
-from ..src.menu_return import *
-from ..src.colors import Colors as C
 
 
 # Blank dict with only static attribute names
 # Init Menu with these...
 STATIC_ATTRS = {
-    #"ID": '',
     "name": '',
     "clear_readout": '',
     "arg_to_first": '',
