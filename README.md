@@ -18,13 +18,13 @@ Use it for quick debugging utilities, as a CLI frontend for scripts, or whenever
    - [Running 'Hello World'](#running-hello-world)
 
 ### 2. Multiple Menus
+   - [Menu Hooks: `open_menu`, `to_menu`, `open_self`](#menu-hooks-open_menu-to_menu-open_self)
    - [Defining Two Menus](#defining-two-menus)
    - [ Exit Key Control: `exit_to`, `exit_key`, `exit_message`](#exit-key-control-exit_to-exit_key-exit_message)
-   - [Passing Data Between Menus](#passing-data-between-menus)
    - [Controlling End Behavior: `end_to`](#controlling-end-behavior-end_to)
 
 ### 3. Function Composition
-   - [Using the `Result` Object](#using-the-result-object)
+   - [Using the `Menu.result` Object](#using-the-menuresult-object)
    - [Accessing Previous Results](#accessing-previous-results)
    - [Named Result References](#named-result-references)
    - [Expanding Results with `.expand()`](#expanding-results-with-expand)
@@ -45,6 +45,7 @@ Use it for quick debugging utilities, as a CLI frontend for scripts, or whenever
 ### 6. Other Menu Attributes
    - [`invalid_key` and `empty_message`](#invalid_key-and-empty_message)
    - [Colors and Appearance: `MenuColors`, `ItemColors`, `Colors`, `exit_colors`](#colors-and-appearance-menucolors-itemcolors-colors-exit_colors)
+   - [Set Global Colors: `Menu.set_global_colors`](#set-global-colors-menuset_global_colors)
    - [`Menu.kwargs`](#menukwargs)
    - [Early Exit: `escape`, `escape_to`](#early-exit-escape-escape_to)
    - [`Menu.self`](#menuself)
@@ -84,9 +85,13 @@ menu1 = Menu(name = "First Menu")
 Create menu items using the `Item` class with three main parts:
 
 ```python
-from menucmd import Menu, Item
+from menucmd import Item
 
-Item(key="x", message="display message", funcs=[(func1, arg1), (func2, arg2), ...])
+Item(
+    key="x", 
+    message="display message", 
+    funcs=[(func1, arg1), (func2, arg2), ...]
+)
 ```
 
 - **key**: Key to press to select this item (e.g., "x", "1", "a")
@@ -173,6 +178,38 @@ When there is no more code to be run after the menu breaks, the program ends.
 
 ## 2. Multiple Menus
 
+### Menu Hooks: `open_menu`, `to_menu`, `open_self`
+
+Menus run as functions by default and return a result.  When navigating between menus, you may think to call another menu in the function chain like:
+
+```python
+menu.append(
+    Item(key="a", message="open menu", funcs=[
+        (menu, ())
+    ])
+)
+```
+
+The problem here is that every time a menu is called, it will add to the python callstack and the recursion depth limit will eventually be reached.  For menus that dont lead to other menus and must simply return a value, direct evaluation is fine.
+
+In the case of menu navigation, use the following hooks:
+- `open_menu(menu, arg=None)`: opens menu with optional argument
+- `to_menu(menu)`: opens menu in `Menu.*_to` functions
+- `open_self(arg=None)`: opens current menu with optional argument
+
+
+Updated example:
+```python
+menu.append(
+    Item(key="a", message="open menu", funcs=[
+        (open_menu, (menu2,))
+    ])
+)
+```
+
+Menu hooks will cause the chain to exit and any functions later in the chain will not be run!  
+
+----
 ### Defining Two Menus
 You can open other menus by running them as functions, letting the user navigate through a deeper menu structure.
 
@@ -183,15 +220,17 @@ First create a new `Menu` instance in the same way as **menu1**:
 menu1 = Menu(name="First Menu")
 menu2 = Menu(name="Second Menu")
 ```
-Then, add another entry to **menu1** that runs **menu2** with no arguments:
+Then, add another entry to **menu1** that runs **menu2** with no arguments.
 
 ```python
+from menucmd import open_menu
+
 menu1.append(
     Item(key="x", message="hello world program", funcs=[
         (print, "hello world!")
     ]),
     Item(key="a", message="menu2", funcs=[
-        (menu2, ())
+        (open_menu, (menu2,))
     ])
 )
 ```
@@ -227,16 +266,16 @@ menu = Menu(exit_key='q')
 menu = Menu(exit_message='quit')
 
 # Change what happens when exiting (default returns from menu)
-menu = Menu(exit_to=other_menu)  # Go to other_menu instead
+menu = Menu(exit_to=to_menu(other_menu))  # Go to other_menu instead
 ```
 Adding an entry to **menu2** and setting its `exit_to` will return to `menu1` when the user exits **menu2**. A concise example:
 
 ```python
 menu1 = Menu(name="First Menu")
-menu2 = Menu(name="Second Menu", exit_to=menu1, exit_message="to menu1")
+menu2 = Menu(name="Second Menu", exit_to=to_menu(menu1), exit_message="to menu1")
 
 menu1.append(
-    Item(key="a", message="open menu2", funcs=[(menu2, ())]),
+    Item(key="a", message="open menu2", funcs=[(open_menu, (menu2,))]),
 )
 
 menu2.append(
@@ -246,12 +285,12 @@ menu2.append(
 menu1()
 ```
 
-When the user selects `a` then exits from `menu2`, control returns to `menu1` because of `exit_to=menu1`.
+When the user  exits from `menu2`, control returns to `menu1`.
 
 ----
 ### Passing Data Between Menus
 
-A menu can call another and pass data via `result`. To send the current menu argument into the target menu, pass `result` as the argument when calling it:
+A menu can call another and pass data via `result`. Use `open_menu` to transfer control while passing the value:
 
 ```python
 menu_a = Menu(name="Menu A")
@@ -260,14 +299,14 @@ menu_b = Menu(name="Menu B")
 menu_a.append(
     Item(key="open_b", message="go to Menu B", funcs=[
         (input, "Your name: "),
-        (menu_b, result)  # Pass name to menu_b
+        (open_menu, (menu_b, result))  # Pass name to menu_b
     ])
 )
 
 menu_b.append(
     Item(key="greet", message="say hello", funcs=[
         (print, ("Hello", result)),  # result[0] = name from menu_a (after arg_to)
-        (menu_a, result)  # Return to menu_a with same name
+        (open_menu, (menu_a, result))  # Return to menu_a with same name
     ])
 )
 ```
@@ -275,17 +314,17 @@ menu_b.append(
 ---
 ### Controlling End Behavior: `end_to` 
 
-By default, after a function chain completes, the menu calls itself when the chain's last function returns `None`.  Change this with `end_to`:
+By default, after a function chain completes, the menu opens itself when the chain's last function returns `None`.  Change this with `end_to`:
 
 ```python
-menu = Menu(end_to=other_menu)  # After chain, open other_menu
+menu = Menu(end_to=to_menu(other_menu))  # After chain, open other_menu
 ```
 
 **Practical example:** Create a simple info display that returns to the main menu:
 
 ```python
 main_menu = Menu(name="Main")
-info_menu = Menu(name="Info", end_to=main_menu)
+info_menu = Menu(name="Info", end_to=to_menu(main_menu))
 
 info_menu.append(
     Item(key="show", message="show info", funcs=[
@@ -296,26 +335,27 @@ info_menu.append(
 
 main_menu.append(
     Item(key="info", message="view info", funcs=[
-        (info_menu, ())
+        (open_menu, (info_menu, ()))
     ])
 )
 ```
 
-If the menu does not invoke `end_to`, it will return the *last return* in the chain directly.  This allows menus to compose like functions.  You can either use `end_to` to open another menu (commonly after a print statement), or transform the `None` value into something else for the return.
-
 ---
 ## 3. Function Composition
 
-### Using the `Result` Object
+### Using the `Menu.result` Object
 
-When you chain functions, you often need the output of one function as input to the next. That's what `result` does.
+When you chain functions, you often need the output of one function as input to the next. That's what `Menu.result` does.  
+
+*(You may choose to rename it to `result`)*
 
 `result` serves as a special placeholder, replacing the output of the previous function during execution.
 
 **Simple example:** Get number → convert to int → square it → print:
 
 ```python
-from menucmd import Menu, Item
+from menucmd import Menu, Item, Result
+
 result = Menu.result
 
 menu = Menu(name="Square a Number")
@@ -456,7 +496,7 @@ def menu_arg_to(x):
 menu(arg_to=menu_arg_to, arg_to_first=False)
 ```
 
-If `arg_to_first=True` (the default) the argument is squashed as soon as the menu opens,
+If `arg_to_first=True` (the default) the argument is evaluated as soon as the menu opens,
 so you'll see the print message **before** any options appear. With
 `arg_to_first=False`, the raw argument is preserved while the user browses options;
 the transformation (and the print) happens only when a keyed item is chosen, just
@@ -570,7 +610,7 @@ menu.clear()                          # Remove all items (keeps exit key)
 Change exit key properties after creation:
 
 ```python
-menu.ch_exit(exit_key="q", exit_message="quit", exit_to=other_menu)
+menu.ch_exit(exit_key="q", exit_message="quit", exit_to=to_menu(other_menu))
 ```
 
 Only specified parameters are updated; omit any you don't want to change.
@@ -604,32 +644,32 @@ menu = Menu(invalid_key="Invalid choice", empty_message="No entries")
 Style menus and items with ANSI escape codes. Three helper classes help you do this:
 
 - `Colors` provides a simple namespace of ANSI color/formatting codes (e.g. `Colors.RED`, `Colors.BOLD`).
-- `MenuColors`: a dataclass that defines default colors for menu elements.  Instantiate it and pass via the `colors` argument when creating a `Menu`.  Its fields include:
+- `MenuColors`: a dataclass that defines default colors for menu elements. Instantiate it and pass via the `colors` argument when creating a `Menu`. Its fields include:
   - `name` – the menu title line.
   - `empty_message` – text shown when the menu has no entries.
   - `invalid_key` – message printed on bad keypress.
   - ***All fields in `ItemColors`**
-- `ItemColors`: a subset of `MenuColors` that overrides colors for individual items on an attribute‑by‑attribute basis.  Its fields include:
+- `ItemColors`: a subset of `MenuColors` that overrides colors for individual items on an attribute‑by‑attribute basis. Its fields include:
   - `key` - the item key
   - `key_dash` - the dash between key and message
   - `message` - the item message
 
 The `exit_colors` parameter in `Menu` also accepts an `ItemColors` instance and works in the same way as colors passed to an `Item`.
 
+---
+### Set Global Colors: `Menu.set_global_colors`
+
+You can set defaults across all menus by calling `Menu.set_global_colors` with a `MenuColors` and/or `ItemColors` instance. This merges your values into the class-level defaults, affecting every menu created thereafter.
+
 ```python
-from menucmd import Menu, Item, MenuColors, ItemColors, Colors
+from menucmd import Menu, MenuColors, ItemColors, Colors
 
-menu = Menu(colors=MenuColors(...),
-            exit_colors=ItemColors(key=Colors.RED + Colors.BOLD))
+# change the default key color for all menus
+Menu.set_global_colors(colors=MenuColors(key=Colors.GREEN))
 
-menu.append(
-    Item(key="a", message="blue key", funcs=[(print, "hi")]),
-    Item(key="b", message="red key", funcs=[(print, "yo")],
-         colors=ItemColors(key=Colors.RED))
-)
+# make the exit key red in every menu
+Menu.set_global_colors(exit_colors=ItemColors(key=Colors.RED))
 ```
-
-In the example above the second item only overrides the `key` color, inheriting the other styles from `menu.colors`.
 
 ----
 ### Menu.kwargs
@@ -679,7 +719,7 @@ By default, `escape` re-runs the current menu. Change this with `escape_to`:
 
 ```python
 menu_a = Menu()
-menu_b = Menu(escape_to=menu_a)  # On escape, return to menu_a instead
+menu_b = Menu(escape_to=to_menu(menu_a))  # On escape, return to menu_a instead
 
 menu_b.append(
     Item(key="enter", message="enter text", funcs=[
@@ -746,10 +786,10 @@ When multiple `*_to` parameters tie to the same menu, use shortcuts:
 menu_home = Menu()
 
 # Instead of:
-submenu = Menu(exit_to=menu_home, end_to=menu_home, escape_to=menu_home)
+submenu = Menu(exit_to=(menu_home), end_to=(menu_home), escape_to=(menu_home))
 
 # Use:
-submenu = Menu(exit_to=menu_home, end_to=Menu.exit_to, escape_to=Menu.exit_to)
+submenu = Menu(exit_to=to_menu(menu_home), end_to=Menu.exit_to, escape_to=Menu.exit_to)
 ```
 
 `Menu.exit_to` copies the `exit_to` value. `Menu.end_to` copies `end_to`. This reduces repetition in complex menu hierarchies.
@@ -779,11 +819,12 @@ Menu:
     id: main_menu
     exit_key: "e"
     exit_message: "exit"
+
     Colors:
-        key: Colors.LIGHT_BLUE + Colors.BOLD
+        key: C.LIGHT_BLUE + C.BOLD
     ExitColors:
-        key: Colors.RED + Colors.BOLD
-        message: Colors.FAINT
+        key: C.RED + C.BOLD
+        message: C.FAINT
     
     # <- This is a comment
     
@@ -796,12 +837,12 @@ Menu:
     Item:
         key: "y"
         message: "Go to menu2" 
-        func: menu2()
+        func: open_menu(menu2)
         
 Menu:
     name: "Second Menu"
     id: menu2
-    exit_to: main_menu
+    exit_to: to_menu(main_menu)
     
     Item:
         key: "z"
@@ -812,21 +853,20 @@ Menu:
 ---
 ### `build_menus`
 
-Then import `build_menus`, and run in `main()`:
+Then import `build_menus`, and run with the file path:
 
 ```python
 from menucmd.dsl import build_menus
 
-def main():
-    #Build menus from mcmd
-    menus = build_menus("menus.mcmd")
-    
-    #Populate namespace 
-    main_menu = menus["main_menu"]
-    menu2 = menus["menu2"]
-    
-    #Run
-    main_menu()
+#Build menus from mcmd
+menus = build_menus("menus.mcmd")
+
+#Populate namespace 
+main_menu = menus["main_menu"]
+menu2 = menus["menu2"]
+
+#Run
+main_menu()
 ```
 
 `build_menus` imports the scope from where you call it and creates pointers between menus
@@ -838,9 +878,10 @@ as a dictionary, or return menus from attributes:
 In addtion, the following shorthand refs are included in MCMDlang by default:
 - `result` = `Menu.result`
 - `B` = `Bind`
+- `C` = `Colors`
 - `kwargs` = `Menu.kwargs`
 - `self` = `Menu.self`
-- All builtins
+- All builtins and menu hooks
 
 ---
 
@@ -853,7 +894,6 @@ of builtin functions to create template menus and to make in-line composition ea
 ```python
 from menucmd.builtins import *
 ```
-
 
 ### In-line Functions
 
@@ -879,9 +919,6 @@ menu.append(
 ### f_escape(*args, **kwargs)
 
 Always returns `escape` regardless of arguments. Useful for unconditionally ending a chain.
-
-
-
 
 -----
 ### f_end(*args, **kwargs)
