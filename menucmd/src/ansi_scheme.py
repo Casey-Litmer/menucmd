@@ -8,11 +8,10 @@ class ItemColors:
     dash: Optional[str] = None
     message: Optional[str] = None
 
-    def merge(self, other: Optional["MenuColors | ItemColors"]) -> "ItemColors":
+    def merge(self, other: Optional["ItemColors"]) -> "ItemColors":
         if other is None:
             return self
-        return replace(self, **{k: v for k, v in asdict(other).items() \
-            if v is not None})
+        return replace(self, **{k: v for k, v in asdict(other).items() if v is not None})
 
 
 @dataclass
