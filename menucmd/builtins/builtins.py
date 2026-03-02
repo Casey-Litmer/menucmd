@@ -69,7 +69,7 @@ def edit_list(entries: Iterables, display_as = lambda x:x, **kwargs) -> Iterable
     else:
         raise TypeError
 
-    return type(entries)(menu())
+    return type(entries)(menu()) #type: ignore
 
 
 def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as = lambda x:x, **kwargs) -> Any:

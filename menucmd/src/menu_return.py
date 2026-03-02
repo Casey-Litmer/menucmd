@@ -1,16 +1,24 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import Any, Optional
 
 
+@dataclass 
+class BaseData:
+    def __iter__(self):
+        for f in fields(self):
+            yield getattr(self, f.name)
+
 
 @dataclass
-class Return:
+class Return(BaseData):
     val: Optional[Any] = None
     code: Optional[str] = None
     menu: Optional[str] = None
     err: Optional[Any] = None
     
-    def __iter__(self):
-        return iter((self.val, self.code, self.menu, self.err))
-    
 
+@dataclass
+class MenuEvalScope(BaseData):
+    chain: list
+    arg: Any
+    tracked_attributes: dict

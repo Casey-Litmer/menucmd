@@ -1,4 +1,4 @@
-
+from ..src.menucmd import Menu
 
 #Output type
 class MenuDict(dict):
@@ -12,10 +12,12 @@ class MenuDict(dict):
 
         self.menus = {menu._id: menu for menu in menus}
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Menu:
         return self.menus[item]
     
-    def get(self, item):
+    def get(self, item) -> Menu:
+        if item not in self.menus:
+            raise KeyError(f"{item} does not exist")
         return self.menus[item]
     
     def __iter__(self):

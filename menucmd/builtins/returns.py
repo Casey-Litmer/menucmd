@@ -1,14 +1,12 @@
-from ..src.menu_return import Return
 from ..src.menucmd import Menu
 
-
-def open_menu(menu: str, arg = None):
+def open_menu(menu: Menu, arg = None):
     """Open menu in func chain"""
-    return Return(val = arg, code = "MENU", menu = menu)
+    return Menu.__RUNMENU__(menu, arg)
 
 def open_self(arg = None): 
-    return Return(val = arg, code="CONT")
+    return Menu.__RUNSELF__(arg)
 
-def to_menu(menu: str):
+def to_menu(menu: Menu):
     """Open menu in Menu.*_to functions"""
-    return lambda arg: Return(val = arg, code = "MENU", menu = menu)
+    return lambda arg: open_menu(menu, arg)

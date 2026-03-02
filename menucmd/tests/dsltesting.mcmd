@@ -1,8 +1,8 @@
 Colors:
-    key: Colors.LIGHT_BLUE + Colors.BOLD
+    key: C.LIGHT_BLUE + C.BOLD
 
 ExitColors:
-    key: Colors.RED
+    key: C.RED
 
 Menu:
     name: "Hub"
@@ -12,20 +12,20 @@ Menu:
     Item:
         key: "e"
         message: "Test Lazy Eval"
-        func: lazy_menu()
+        func: open_menu(lazy_menu)
     Item:
         key: "b"
         message: "Test Builtins"
-        func: builtin_menu()
+        func: open_menu(builtin_menu)
     Item:
         key: "d"
         message: "Test Dynamic Menus"
-        func: dynamic_menu()
+        func: open_menu(dynamic_menu)
 
 Menu:
     name: "Lazy Eval"
     id: lazy_menu
-    exit_to: main_menu
+    exit_to: to_menu(main_menu)
 
     Item:
         key: "s"
@@ -43,7 +43,7 @@ Menu:
         key: "m"
         message: "Menu Composition"
         func: input("string for menu_A: ")
-        func: menu_A(result)
+        func: open_menu(menu_A, result)
     Item:
         key: "i"
         message: "Iterator Test"
@@ -67,10 +67,10 @@ Menu:
 Menu:
     name: "Builtins"
     id: builtin_menu
-    exit_to: main_menu
+    exit_to: to_menu(main_menu)
 
     Colors:
-        key: Colors.CYAN + Colors.BOLD
+        key: C.CYAN + C.BOLD
 
     Item:
         key: "l"
@@ -96,32 +96,32 @@ Menu:
 Menu:
     name: "Dynamic Menus"
     id: dynamic_menu
-    exit_to: main_menu
+    exit_to: to_menu(main_menu)
 
     Colors:
-        key: Colors.CYAN + Colors.BOLD
+        key: C.CYAN + C.BOLD
 
     Item:
         key: "x"
         message: "test keyword function compositions"
         func: (lambda: 0)()
-        func: menu_B(result)
+        func: open_menu(menu_B, result)
     Item:
         key: "s"
         message: "Menu.self usage: insert new item here"
-        func: Menu.insert(self, 0, Item(key="*", message="Nice Job!", funcs=[(main_menu, "*")], colors=ItemColors(key=Colors.GREEN + Colors.BOLD)))
+        func: Menu.insert(self, 0, Item(key="*", message="Nice Job!", funcs=[(open_menu, (main_menu, "*"))], colors=ItemColors(key=C.GREEN + C.BOLD)))
 
 #==================================================================================
 
 Menu:
     name: "Menu_A"
     id: menu_A
-    exit_to: lazy_menu
+    exit_to: to_menu(lazy_menu)
     end_to: Menu.exit_to
 
     Colors:
-        key: Colors.RED
-        message: Colors.FAINT
+        key: C.RED
+        message: C.FAINT
 
     Item:
         key: "m"
@@ -132,12 +132,12 @@ Menu:
 Menu:
     name: "Menu_B"
     id: menu_B
-    exit_to: dynamic_menu
+    exit_to: to_menu(dynamic_menu)
     escape_to: Menu.exit_to
 
     Colors:
-        key: Colors.RED
-        message: Colors.FAINT
+        key: C.RED
+        message: C.FAINT
         
     Item:
         key: "s"

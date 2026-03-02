@@ -1,10 +1,12 @@
 import sys
 from copy import copy
+from dataclasses import dataclass
+from typing import Any
 from macrolibs.typemacros import tupler, dict_union, list_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, maybe_type
 from .result import Result
 from .bind import Bind
-from .colors import *
+from .colors import Colors as C
 from .item import Item
 from .ansi_scheme import *
 from colorama import just_fix_windows_console
@@ -24,6 +26,17 @@ class _Kwargs(dict):
     """Wrapper for kwargs in menufunction composition"""
     pass
 
+@dataclass
+class _RunMenu:
+    """Return this to run a new menu in the call stack"""
+    menu: "Menu"
+    arg: Any
+
+@dataclass 
+class _RunSelf:
+    """Return this to run self in the call stack"""
+    arg: Any
+
 class Menu:
     # Matching Keywords
     exit_to = object()  #Use as keyword for end_to to match exit_to:  Menu(end_to = Menu.exit_to)
@@ -37,14 +50,18 @@ class Menu:
     __END__ = type("Menu.__END__", (object,), {})  #Terminal Object
     id = lambda x:x                                #Identity morphism
 
+    # Messages
+    __RUNMENU__ = _RunMenu
+    __RUNSELF__ = _RunSelf
+
     # Default Colors
     colors = MenuColors(
-        name = Colors.BOLD,
-        empty_message = Colors.WHITE,
-        invalid_key = Colors.LIGHT_RED + Colors.ITALIC,
-        key = Colors.BLINK + Colors.BOLD,
-        dash = Colors.BOLD,
-        message = Colors.ITALIC,
+        name = C.BOLD,
+        empty_message = C.LIGHT_RED + C.ITALIC,
+        invalid_key = C.LIGHT_RED + C.ITALIC,
+        key = C.BLINK + C.BOLD,
+        dash = C.BOLD,
+        message = C.ITALIC,
     )
     exit_colors = ItemColors()
 
@@ -91,8 +108,8 @@ class Menu:
         self.menu = {}                               #{"key":(function-arg chain)}
 
         #Define breakpoints, apply menu updates
-        self.end_to = self if end_to is None else end_to
-        self.escape_to = self if escape_to is None else escape_to
+        self.end_to = lambda x: Menu.__RUNSELF__(x) if end_to is None else end_to
+        self.escape_to = lambda x: Menu.__RUNSELF__(x) if escape_to is None else escape_to
         self.check_banned_self_refs()
         self.apply_matching_keywords()
         self.replace_self_references()
@@ -100,10 +117,33 @@ class Menu:
         #TODO: group together?
 
     #==================================================================================
-    # Protocall
+    # Stack Loop
     #==================================================================================
 
     def __call__(self, arg = None):
+        current_menu = self
+        current_arg = arg
+
+        print("CALL")
+
+        while True:
+            menu_result = current_menu._run_menu(current_arg)
+
+            if isinstance(menu_result, Menu.__RUNMENU__):
+                current_menu = menu_result.menu
+                current_arg = menu_result.arg
+                continue
+            elif isinstance(menu_result, Menu.__RUNSELF__):
+                current_arg = menu_result.arg
+                continue
+            print("END")
+            return menu_result
+
+    #==================================================================================
+    # Protocall
+    #==================================================================================
+
+    def _run_menu(self, arg = None):
         """Runs menu with 'arg' asking for user input.
         Selection runs the item's function chain where each nth function has
         access to Menu.result[0 -> n]; (n in [0,1,2...])
@@ -121,7 +161,7 @@ class Menu:
         # List state logic
         if not self.menu_display_list[:-1]:
             # Exit on empty menu
-            empty_ansi = self.colors.empty_message
+            empty_ansi = colors.empty_message
             print(f"{empty_ansi}{self.empty_message}\x1b[0m")
             selection = self.exit_key
         else:
@@ -140,7 +180,7 @@ class Menu:
         if selection not in self.menu.keys():
             invalid_ansi = colors.invalid_key
             print(f"{invalid_ansi}{self.invalid_key}\x1b[0m")
-            return self(arg)
+            return Menu.__RUNSELF__(arg)
 
         # Select Item
         func_chain = self.menu[selection]
@@ -168,6 +208,10 @@ class Menu:
 
             # Evaluate Function
             result = Bind.lazy_eval(func, args, kwargs)
+
+            # Restart Callstack 
+            if result is Menu.__RUNMENU__:
+                return result
 
             # Manual escape
             if result is Menu.escape:
@@ -299,8 +343,6 @@ class Menu:
 
     def update_menu_lists(self, item: Item):
         """Updates menu lists with new Item"""
-        if self.name=='Hub':
-            print(Menu.colors.merge(self.colors))
         colors = Menu.colors.merge(self.colors).merge(item.colors)
         key_ansi = colors.key
         dash_ansi = colors.dash

@@ -5,6 +5,7 @@ from ..builtins.builtins import *
 from ..builtins.returns import *
 from .utils import *
 from ..src.menu_return import *
+from ..src.colors import Colors as C
 
 
 # Blank dict with only static attribute names

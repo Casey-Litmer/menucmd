@@ -1,17 +1,30 @@
 TODO
 
 
+#Version 1.3.0
+#-----------------
+
+* make trampoline handle menus in the middle of a chain
+  - while keeping backwards compatibility???
+
+X* global menu colors (maybe scoped in trampoline?)
+  !!! DOCS
+
+* allow line breaks \ in mcmd
+
+* let trampoline either take a MenuDict or path to mcmd
+  - Menus must have a randomized default _id
 
 
 #Version 1.1.0
 #-----------------
 
-* Add Sections hyperlinks in README
+X* Add Sections hyperlinks in README
 
 
 X* Create dsl for menu creation
 
-* Document weird things
+X* Document weird things
   X- when menu2.exit_to = menu1, it passes the arg that menu2 is run with.
     Xuse exit_to = Bind(menu1, x) to specify what to run it with
 
