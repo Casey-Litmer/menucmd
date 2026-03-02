@@ -10,7 +10,7 @@ class MenuDict(dict):
         for menu in menus:
             self.__setattr__(menu._id, menu)
 
-        self.menus = {menu._id: menu for menu in menus}
+        self.menus: dict[str, Menu] = {menu._id: menu for menu in menus}
 
     def __getitem__(self, item) -> Menu:
         return self.menus[item]

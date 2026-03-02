@@ -83,9 +83,9 @@ def dict_to_objs(struct_: dict) -> MenuDict:
                 setattr(menu, name, eval(attr))
 
         # Reapply menu updates
-        menu.check_banned_self_refs()
-        menu.apply_matching_keywords()
-        menu.replace_self_references()
+        menu._check_banned_self_refs()
+        menu._apply_matching_keywords()
+        menu._replace_self_references()
         menu.ch_exit()
 
     return menus
