@@ -124,8 +124,6 @@ class Menu:
         current_menu = self
         current_arg = arg
 
-        print("CALL")
-
         while True:
             menu_result = current_menu._run_menu(current_arg)
 
@@ -136,7 +134,7 @@ class Menu:
             elif isinstance(menu_result, Menu.__RUNSELF__):
                 current_arg = menu_result.arg
                 continue
-            print("END")
+
             return menu_result
 
     #==================================================================================
