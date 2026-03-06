@@ -42,11 +42,15 @@ class Menu:
         name = C.BOLD,
         empty_message = C.LIGHT_RED + C.ITALIC,
         invalid_key = C.LIGHT_RED + C.ITALIC,
-        key = C.BLINK + C.BOLD,
+        key = C.BOLD,
         dash = C.BOLD,
         message = C.ITALIC,
     )
-    exit_colors = ItemColors()
+    exit_colors = ItemColors(
+        key = C.BOLD,
+        dash = C.BOLD,
+        message = C.ITALIC,
+    )
 
     #==================================================================================
 
