@@ -45,7 +45,7 @@ def yesno_ver(yes = True, no = False, yes_message = "yes", **kwargs) -> bool | A
     return menu()
 
 
-def edit_list(entries: Iterables, display_as = lambda x:x, **kwargs) -> Iterables:
+def edit_list(entries: Iterables, display_as = str, **kwargs) -> Iterables:
     """Delete items in a list/tuple/dict/set; returns updated list/tuple/dict/set"""
 
     kwargs_: dict[str, Any] = {"name":"Edit List"} | kwargs | {"exit_to":lambda: entries}
@@ -53,17 +53,17 @@ def edit_list(entries: Iterables, display_as = lambda x:x, **kwargs) -> Iterable
 
     if isinstance(entries, list | tuple):
         for n, entry in enumerate(entries):
-            menu.append(Item(key=str(n+1), message=display_as(str(entry)), funcs=[
+            menu.append(Item(key=str(n+1), message=display_as(entry), funcs=[
                 (edit_list, (entries[:n] + entries[n+1:], Menu.kwargs(display_as=display_as, **kwargs)))
             ]))
     elif isinstance(entries, set):
         for n, entry in enumerate(entries):
-            menu.append(Item(key=str(n+1), message=display_as(str(entry)), funcs =[
+            menu.append(Item(key=str(n+1), message=display_as(entry), funcs =[
                 (edit_list, (set_compliment(entries, {entry}), Menu.kwargs(display_as=display_as, **kwargs)))
             ]))
     elif isinstance(entries, dict):
         for n, (k, v) in enumerate(entries.items()):
-            menu.append(Item(key=str(n+1), message=f"{k}:{display_as(str(v))}", funcs=[
+            menu.append(Item(key=str(n+1), message=f"{k}:{display_as(v)}", funcs=[
                 (edit_list, (dict_compliment(entries, {k:v}), Menu.kwargs(display_as=display_as, **kwargs)))
             ]))
     else:
@@ -72,7 +72,7 @@ def edit_list(entries: Iterables, display_as = lambda x:x, **kwargs) -> Iterable
     return type(entries)(menu()) #type: ignore
 
 
-def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as = lambda x:x, **kwargs) -> Any:
+def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as = str, **kwargs) -> Any:
     """Pick and return an element from a list/tuple/dict/set.
     Returns (key, value) pair for dict.
     On exit key, return 'exit_val' (None by default)
@@ -82,20 +82,20 @@ def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as 
 
     if isinstance(entries, list | tuple):
         for n, entry in enumerate(entries):
-            menu.append(Item(key=str(n+1), message=display_as(str(entry)), funcs=[(Menu.id, entries[n])]))
+            menu.append(Item(key=str(n+1), message=display_as(entry), funcs=[(Menu.id, entries[n])]))
     elif isinstance(entries, set):
         for n, entry in enumerate(entries):
-            menu.append(Item(key=str(n+1), message=display_as(str(entry)), funcs=[(Menu.id, entry)]))
+            menu.append(Item(key=str(n+1), message=display_as(entry), funcs=[(Menu.id, entry)]))
     elif isinstance(entries, dict):
         for n, (k, v) in enumerate(entries.items()):
-            menu.append(Item(key=str(n+1), message=f"{k}:{display_as(str(v))}", funcs=[(Menu.id, ((k, v),))]))
+            menu.append(Item(key=str(n+1), message=f"{k}:{display_as(v)}", funcs=[(Menu.id, ((k, v),))]))
     else:
         raise TypeError
 
     return menu()
 
 
-def choose_items(entries: Iterables, display_as = lambda x:x, **kwargs) -> Iterables:
+def choose_items(entries: Iterables, display_as = str, **kwargs) -> Iterables:
     """Pick and return mutiple elements from a list/tuple/dict/set."""
     return type_compliment(entries, edit_list(entries, display_as = display_as, **kwargs))
 
