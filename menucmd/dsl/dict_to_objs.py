@@ -34,11 +34,14 @@ def dict_to_objs(struct_: dict) -> MenuDict:
     if not "Menu" in struct_:
         raise RuntimeError("'Menu' must be present in the outer struct")
     
+    # Get global scope
+    retrieve_globals(globals())
+    
     # Set Global Colors
     if global_colors := struct_.get("Colors"):
-        Menu.set_global_colors(colors=convert_colors(global_colors, "Menu")) #type: ignore
+        Menu.set_global_colors(colors=convert_colors(global_colors, "Menu", globals())) #type: ignore
     if global_colors := struct_.get("ExitColors"):
-        Menu.set_global_colors(exit_colors=convert_colors(global_colors, "ExitColors"))
+        Menu.set_global_colors(exit_colors=convert_colors(global_colors, "ExitColors", globals()))
 
     # Initlialize all menus with only static attributes to a dict indexed by 'ID'
     for attrs in struct_["Menu"]:
@@ -52,7 +55,7 @@ def dict_to_objs(struct_: dict) -> MenuDict:
         static_attrs = dict_intersect(attrs, STATIC_ATTRS)
 
         # Convert attrs types
-        convert_static_attr_types(static_attrs)
+        convert_static_attr_types(static_attrs, globals())
 
         # Create Menu
         menu = Menu(**static_attrs)
@@ -66,9 +69,8 @@ def dict_to_objs(struct_: dict) -> MenuDict:
     # Convert list to attributable dict: {menu_id: Menu}
     menus = MenuDict(menus)
 
-    # Add menu ids to global pointers and retrieve caller globals
+    # Add menu ids to globals
     cannonize_menu_ids(menus, globals())
-    retrieve_globals(globals())
 
     # Set all non-static attributes and convert 'ID' references to pointers
     for menu_id, menu, attrs in zip(menus.keys(), menus.values(), struct_["Menu"]):
@@ -101,7 +103,7 @@ def _append_menu_items( menu: Menu, items: list[dict],):
             raise KeyError("Item must have 'key' attribute")
 
         funcs = [_parse_funcargs(funcargs) for funcargs in item['func']] if item.get('func') else []
-        colors = convert_colors(item['Colors'], "Item") if item.get('Colors') else None  
+        colors = convert_colors(item['Colors'], "Item", globals()) if item.get('Colors') else None  
         
         # Append Items
         menu.append(Item(

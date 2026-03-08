@@ -11,27 +11,27 @@ self = Menu.self
 B = Bind
 C = Colors
 
-def convert_static_attr_types(static_attrs: dict) -> None:
+def convert_static_attr_types(static_attrs: dict, globals: dict):
     """Converts Non-String types"""
     for key, val in static_attrs.items():
         if key not in { 'Colors', 'ExitColors' }:
-            static_attrs[key] = eval(val)
+            static_attrs[key] = eval(val, globals)
 
     if static_attrs.get('Colors'):
         # Rename key for menu args
-        static_attrs['colors'] = convert_colors(static_attrs['Colors'], "Menu")
+        static_attrs['colors'] = convert_colors(static_attrs['Colors'], "Menu", globals)
         del static_attrs['Colors']
 
     if static_attrs.get('ExitColors'):
         # Rename key for menu args
-        static_attrs['exit_colors'] = convert_colors(static_attrs['ExitColors'], "ExitColors")
+        static_attrs['exit_colors'] = convert_colors(static_attrs['ExitColors'], "ExitColors", globals)
         del static_attrs['ExitColors']
 
 
-def convert_colors(colors: dict, block: str) -> MenuColors | ItemColors:
+def convert_colors(colors: dict, block: str, globals: dict) -> MenuColors | ItemColors:
     """Evaluates ANSI color schemes"""
     scheme = {'Menu': MenuColors, 'Item': ItemColors, 'ExitColors': ItemColors}[block]
-    return scheme(**dict([k, eval(v)] for k, v in colors.items()))
+    return scheme(**dict([k, eval(v, globals)] for k, v in colors.items()))
 
 
 def retrieve_globals(target_globals):

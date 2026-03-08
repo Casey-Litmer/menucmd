@@ -1,9 +1,9 @@
-import sys
 from copy import copy
 from dataclasses import make_dataclass
 from typing import Any
 from macrolibs.typemacros import tupler, dict_union, list_union
 from macrolibs.typemacros import replace_value_nested, maybe_arg, maybe_type
+from .util import count_visual_lines, clear_lines
 from .result import Result
 from .bind import Bind
 from .colors import Colors as C
@@ -153,14 +153,15 @@ class Menu:
         else:
             # Print Menu And Get Input
             name_ansi = colors.name
-            show = f"\n{name_ansi}{self.name}\x1b[0m\n" + "\n".join(self.menu_display_list) + "\n"
+            show = f"\n{name_ansi}{self.name}\x1b[0m\n" \
+                + "\n".join(self.menu_display_list) + "\n"
             print(f"{show}\x1b[0m", end='')
-            printed_lines = show.count('\n') + 1
+            printed_lines = count_visual_lines(show)
             selection = input()
 
             # Clear previous menu
             if self.clear_readout:
-                Menu._clear_lines(printed_lines)
+                clear_lines(printed_lines)
 
         # Refresh Menu On Invalid Input
         if selection not in self.menu.keys():
@@ -416,16 +417,6 @@ class Menu:
             else:
                 new += [x]
         return type(A)(new)
-
-
-    @staticmethod
-    def _clear_lines(printed_lines: int) -> None:
-        """Clears previous menu from terminal"""
-        if printed_lines <= 0:
-            return
-        #print(f"\x1b[{printed_lines}A\x1b[J", end='', flush=True)
-        sys.stdout.write(f"\x1b[{printed_lines}A\x1b[J")
-        sys.stdout.flush()
 
     #==================================================================================
     # Errors
