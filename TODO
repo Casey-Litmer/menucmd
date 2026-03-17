@@ -10,7 +10,7 @@ TODO
 X* global menu colors (maybe scoped in trampoline?)
   !!! DOCS
 
-* allow line breaks \ in mcmd
+X* allow line breaks \ in mcmd
 
 * let trampoline either take a MenuDict or path to mcmd
   - Menus must have a randomized default _id

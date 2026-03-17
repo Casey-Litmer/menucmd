@@ -55,12 +55,25 @@ def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_bl
     """
     block = {}
     n = start_idx
+    line_segments = []
     
     while n < len(lines):
         line = lines[n]
-        current_indent = _get_indent(line)
         stripped = line.strip()
-        
+
+        # Track Line Breaks
+        if stripped[-1] == '\\':
+            line_segments.append(stripped[:-1].strip())
+            n += 1
+            continue
+        elif len(line_segments) > 0:
+            line_segments.append(stripped)
+            stripped = ' '.join(line_segments)
+            line_segments = []
+        else:
+            # Only update indent outside of line breaks
+            current_indent = _get_indent(line)
+
         # Exit Scope
         if current_indent < expected_indent:
             return block, n

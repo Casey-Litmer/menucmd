@@ -12,7 +12,7 @@ Menu:
     Item:
         key: "e"
         message: "Test Lazy Eval"
-        func: open_menu(lazy_menu)
+        func: open_menu (lazy_menu)
     Item:
         key: "b"
         message: "Test Builtins"
@@ -109,7 +109,8 @@ Menu:
     Item:
         key: "s"
         message: "Menu.self usage: insert new item here"
-        func: Menu.insert(self, 0, Item(key="*", message="Nice Job!", funcs=[(open_menu, (main_menu, "*"))], colors=ItemColors(key=C.GREEN + C.BOLD)))
+        func: Menu.insert(self, 0, Item(key="*", message="Nice Job!", \
+            funcs=[(open_menu, (main_menu, "*"))], colors=ItemColors(key=C.GREEN + C.BOLD)))
 
 #==================================================================================
 
