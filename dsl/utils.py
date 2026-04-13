@@ -1,0 +1,64 @@
+import inspect
+from .menu_dict import MenuDict
+from ..builtins.builtins import *
+from ..src.colors import Colors
+
+
+# SHORTHANDS
+result = Menu.result
+kwargs = Menu.kwargs
+self = Menu.self
+B = Bind
+C = Colors
+
+def evaluate_static_attr_types(static_attrs: dict, globals: dict):
+    """Converts Non-String types to literals"""
+    for key, val in static_attrs.items():
+        if key not in { 'Colors', 'ExitColors' }:
+            static_attrs[key] = eval(val, globals)
+
+    if static_attrs.get('Colors'):
+        # Rename key for menu args
+        static_attrs['colors'] = convert_colors(static_attrs['Colors'], "Menu", globals)
+        del static_attrs['Colors']
+
+    if static_attrs.get('ExitColors'):
+        # Rename key for menu args
+        static_attrs['exit_colors'] = convert_colors(static_attrs['ExitColors'], "ExitColors", globals)
+        del static_attrs['ExitColors']
+
+
+def convert_colors(colors: dict, block: str, globals: dict) -> MenuColors | ItemColors:
+    """Evaluates ANSI color schemes"""
+    scheme = {'Menu': MenuColors, 'Item': ItemColors, 'ExitColors': ItemColors}[block]
+    return scheme(**dict([k, eval(v, globals)] for k, v in colors.items()))
+
+
+def retrieve_globals(target_globals):
+    """Adds globals from where the .mcmd file is loaded."""
+    caller_globals = inspect.stack()[3].frame.f_globals
+    target_globals.update(caller_globals)
+
+
+def cannonize_menu_ids(menus: MenuDict, target_globals):
+    """Adds menu to global scope"""
+    for menu_id, menu in menus.items():
+        target_globals[menu_id] = menu
+
+
+def parse_funcargs(funcargs: str) -> tuple[str, str]:
+    """"func(arg1, arg2,...)" -> (func, (arg1, arg2))"""
+    # Extract function.  Works with (lambda:(...))
+    func_args_split = funcargs.split('(')
+    n_closed_par = 0
+
+    # Split func and args
+    for n, x in enumerate(func_args_split[::-1]):
+        n_closed_par += x.count(')')
+        if n_closed_par == n+1:
+            func_str = "(".join(func_args_split[:-n-1])
+            arg_str = "(" + "(".join(func_args_split[-n-1:])
+            return (func_str, arg_str)
+
+    # Parenthesis Error
+    raise SyntaxError(f"Unbalanced parenthesis in '{funcargs}'")

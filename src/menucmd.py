@@ -1,0 +1,445 @@
+from copy import copy
+from dataclasses import make_dataclass
+from typing import Any
+from macrolibs.typemacros import tupler, dict_union, list_union
+from macrolibs.typemacros import replace_value_nested, maybe_arg, maybe_type
+from .util import count_visual_lines, clear_lines
+from .result import Result
+from .bind import Bind
+from .colors import Colors as C
+from .item import Item
+from .ansi_scheme import *
+from colorama import just_fix_windows_console
+
+just_fix_windows_console()
+
+#==================================================================================
+# Menu Class
+#==================================================================================
+
+class Menu:
+    # Matching Keywords
+    exit_to = object()  #Use as keyword for end_to to match exit_to:  Menu(end_to = Menu.exit_to)
+    end_to = object()   #
+
+    # Keyword Objects
+    result = Result(-1)
+    escape = object()
+    self = object()
+    __END__ = type("Menu.__END__", (object,), {})  #Terminal Object
+    id = lambda x:x                                #Identity morphism
+
+    # Wrappers
+    _expand = type("Menu.expand", (tuple,), {})
+    kwargs = type("Menu.kwargs", (dict,), {})
+
+    # Messages
+    __RUNMENU__ = make_dataclass("Menu.__RUNMENU__", [("menu", "Menu"), ("arg", Any)])
+    __RUNSELF__ = make_dataclass("Menu.__RUNSELF__", [("arg", Any)])
+
+    # Default Colors
+    colors = MenuColors(
+        name = C.BOLD,
+        empty_message = C.LIGHT_RED + C.ITALIC,
+        invalid_key = C.LIGHT_RED + C.ITALIC,
+        key = C.BOLD,
+        dash = C.BOLD,
+        message = C.ITALIC,
+    )
+    exit_colors = ItemColors(
+        key = C.BOLD,
+        dash = C.BOLD,
+        message = C.ITALIC,
+    )
+
+    #==================================================================================
+
+    def __init__(self,
+                 name = "Choose Action",
+                 invalid_key = "--*Invalid Key*--",
+                 empty_message = "--*No Entries*--",
+                 clear_readout = True,
+                 arg_to = lambda x:x,
+                 arg_to_first = True,
+                 exit_to = lambda: Menu.__END__,
+                 exit_key = "e",
+                 exit_message = "exit",
+                 colors = MenuColors(),
+                 exit_colors = ItemColors(),
+                 end_to = None,
+                 escape_to = None,
+                 #out_to = lambda x:x,
+                ):
+        # Menu
+        self.name = name
+        self.empty_message = empty_message
+        self.invalid_key = invalid_key
+        self.clear_readout = clear_readout
+
+        # Arg
+        self.arg_to = arg_to
+        self.arg_to_first = arg_to_first
+
+        # Exit
+        self.exit_to = exit_to
+        self.exit_key = exit_key
+        self.exit_message =  exit_message
+        
+        # Colors
+        self.colors = colors
+        self.exit_colors = exit_colors
+
+        # Init menu data
+        self.menu_item_list: list[Item] = []         #de jure list of items
+        self.menu_display_list = []                  #["[key]- message"]
+        self.menu = {}                               #{"key":(function-arg chain)}
+
+        # Define breakpoints, apply menu updates
+        self.end_to = lambda x: Menu.__RUNSELF__(x) if end_to is None else end_to
+        self.escape_to = lambda x: Menu.__RUNSELF__(x) if escape_to is None else escape_to
+        self._check_banned_self_refs()
+        self._apply_matching_keywords()
+        self._replace_self_references()
+        self.ch_exit()
+
+        # Default Flags
+        self._is_generated = False
+        self._id = id(self)
+
+    #==================================================================================
+    # Stack Loop
+    #==================================================================================
+
+    def __call__(self, arg = None):
+        current_menu = self
+        current_arg = arg
+
+        while True:
+            menu_result = current_menu._run_menu(current_arg)
+
+            if isinstance(menu_result, Menu.__RUNMENU__):
+                current_menu = menu_result.menu
+                current_arg = menu_result.arg
+            elif isinstance(menu_result, Menu.__RUNSELF__):
+                current_arg = menu_result.arg
+            else: 
+                return menu_result
+
+    #==================================================================================
+    # Protocall
+    #==================================================================================
+
+    def _run_menu(self, arg = None):
+        """Runs menu with 'arg' asking for user input.
+        Selection runs the item's function chain where each nth function has
+        access to Menu.result[0 -> n]; (n in [0,1,2...])
+
+        Menu.result[0] == arg
+        """
+        # Evaluate arg_to and add 0th result (Before selection)
+        if self.arg_to_first:
+            result = maybe_arg(self.arg_to)(arg)
+            self._check_banned_self_messages(result, "arg_to")
+            if result is Menu.__RUNMENU__:
+                return result
+            results = [result]
+        
+        # Merge Colors (after arg_to for possible color updates)
+        colors = Menu.colors.merge(self.colors)
+
+        # List state logic
+        if not self.menu_display_list[:-1]:
+            # Exit on empty menu
+            empty_ansi = colors.empty_message
+            print(f"{empty_ansi}{self.empty_message}\x1b[0m")
+            selection = self.exit_key
+        else:
+            # Print Menu And Get Input
+            name_ansi = colors.name
+            show = f"\n{name_ansi}{self.name}\x1b[0m\n" \
+                + "\n".join(self.menu_display_list) + "\n"
+            print(f"{show}\x1b[0m", end='')
+            printed_lines = count_visual_lines(show)
+            selection = input()
+
+            # Clear previous menu
+            if self.clear_readout:
+                clear_lines(printed_lines)
+
+        # Refresh Menu On Invalid Input
+        if selection not in self.menu.keys():
+            invalid_ansi = colors.invalid_key
+            print(f"{invalid_ansi}{self.invalid_key}\x1b[0m")
+            return Menu.__RUNSELF__(arg)
+
+        # Select Item
+        func_chain = self.menu[selection]
+
+        # Exit menu if exit_key pressed
+        if selection == self.exit_key:
+            return maybe_arg(func_chain[0][0])(arg)
+
+        # Evaluate arg_to and add 0th result (After selection)
+        if not self.arg_to_first:
+            result = maybe_arg(self.arg_to)(arg)
+            self._check_banned_self_messages(result, "arg_to")
+            if result is Menu.__RUNMENU__:
+                return result
+            results = [result]
+
+        # Init Tracked Attributes
+        tracked_attributes = {}
+
+        # Evaluate Function Chain
+        for pair in func_chain:
+            # Get func/args pair
+            func = pair[0]
+            args = tupler(pair[1])
+
+            # Replace Results and Separate args/kwargs
+            func, args, kwargs = self._replace_keywords(func, args, results, tracked_attributes)
+
+            # Evaluate Function
+            result = Bind.lazy_eval(func, args, kwargs)
+
+            # Restart Callstack on Message 
+            if result is Menu.__RUNMENU__:
+                return result
+
+            # Manual escape
+            if result is Menu.escape:
+                return maybe_arg(self.escape_to)(arg)
+
+            # End Loop
+            results.append(result)
+
+        # Go to end_to if final value is None
+        return result if result is not None else maybe_arg(self.end_to)(arg)
+
+        #Maybe do this in the future for None returns:
+        #maybe_arg(self._replace_keywords(self.end_to, (), results)[0])(arg)
+        #
+        #It doesn't make sense to have two refs to result[0] = arg
+        #but built-in behaviour switching via Bind based on past results might be better than
+        #using inline functions to switch between a result return and a None return
+
+
+    def _replace_keywords(self, func, args: tuple, results: list, tracked_attributes: dict) -> tuple:
+        """Replaces all inline self references with the current menu.
+        Replaces all Menu.result objects with function results from the chain.
+
+        Returns a tuple in the form (func, args, kwargs).
+
+        'args' may also include all kwargs distinguished by the Menu.kwargs wrapper.
+        """
+        # Replace self reference
+        func = replace_value_nested(tupler(func), Menu.self, self)[0]
+        args = replace_value_nested(tupler(args), Menu.self, self)
+
+        # Replace Result Keywords by Attribute
+        for tag, val in tracked_attributes.items():
+            func = replace_value_nested(tupler(func), Result(0).__getattr__(tag), val)[0]
+            args = replace_value_nested(tupler(args), Result(0).__getattr__(tag).expand(), maybe_type(Menu._expand, val))
+            args = replace_value_nested(tupler(args), Result(0).__getattr__(tag), val)
+
+        # Replace Result Keywords by Position
+        N = len(results)
+        for n in range(-N, N):
+            # Detect if a result has an attribute and add first declaration to tracked attributes
+            def track_attr(R, value):
+                if R.__attr__ is not None and R.__attr__ not in tracked_attributes.keys():
+                    tracked_attributes[R.__attr__] = value
+                return value
+
+            func = replace_value_nested(tupler(func), Result(n), results[n], callback= track_attr)[0]
+            args = replace_value_nested(tupler(args), Result(n).expand(), maybe_type(Menu._expand, results[n]), callback= track_attr)
+            args = replace_value_nested(tupler(args), Result(n), results[n], callback= track_attr)
+
+        # Separate args/kwargs
+        kwargs = dict_union(tupler(x for x in args if isinstance(x, Menu.kwargs)))
+        args = tupler(x for x in args if not isinstance(x, Menu.kwargs))
+
+        # 'Uninterprets' tupler for expanded results.  Allows inline notation for (*args) ~ result.expand()
+        args = tuple(Menu._expand_in_place(args))
+
+        return (func, args, kwargs)
+
+    #==================================================================================
+    # API
+    #==================================================================================
+
+    def append(self, *items: Item):
+        """
+        Append items to menu in the form:
+        ('key', 'message', (func1, (*args1), func2, (*args2),...))
+        --*{forces exit key to the end of the list}*--
+        """
+        Menu._check_item_type(*items)
+        self.menu_display_list = self.menu_display_list[:-1]
+        self.menu_item_list = self.menu_item_list[:-1]
+
+        for item in items + (self.exit,):
+            self.menu_item_list.append(item)
+            self._append_menu_lists(item)
+
+
+    def clear(self):
+        """Clears all items from the menu"""
+        self.menu_item_list, self.menu_display_list = [], []
+        self.menu = {}
+        self._append_menu_lists(self.exit)
+
+
+    def insert(self, n: int, *items):
+        """
+        Insert items at position n in the form:
+        ('key', 'message', (func1, (*args1), func2, (*args2),...))
+        """
+        Menu._check_item_type(*items)
+        _data = self.menu_item_list[:-1][:n] + [*items] + self.menu_item_list[:-1][n:]
+        self.clear()
+        self.append(*_data)
+
+
+    def delete(self, n: int, k: int = 1):
+        """Delete k menu entries starting at position n"""
+        _data = self.menu_item_list[:-1][:n] + self.menu_item_list[:-1][n+k:]
+        self.clear()
+        self.append(*_data)
+
+
+    def __getitem__(self, idx):
+        if isinstance(idx, slice):
+            new_menu = copy(self)
+            new_menu.clear()
+            new_menu.append(*self.menu_item_list[:-1][idx])
+            return new_menu
+        return self.menu_item_list[idx]
+
+
+    def set_colors(
+        self, 
+        colors: Optional[MenuColors] = None, 
+        exit_colors: Optional[ItemColors] = None
+    ):
+        """Updates menu colors and regenerates menu lists"""
+        if colors:
+            self.colors = self.colors.merge(colors)
+        if exit_colors:
+            self.exit_colors = self.exit_colors.merge(exit_colors)
+        self._update_menu_lists()
+
+
+    @classmethod
+    def set_global_colors(
+        cls, 
+        colors: Optional[MenuColors] = None, 
+        exit_colors: Optional[ItemColors] = None
+    ):
+        """Updates global colors"""
+        if colors:
+            cls.colors = cls.colors.merge(colors)
+        if exit_colors:
+            cls.exit_colors = cls.exit_colors.merge(exit_colors)
+    
+    #==================================================================================
+    # Updates
+    #==================================================================================
+
+    def _append_menu_lists(self, item: Item):
+        """Updates menu lists with new Item"""
+        colors = Menu.colors.merge(self.colors).merge(item.colors)
+        key_ansi = colors.key
+        dash_ansi = colors.dash
+        message_ansi = colors.message
+
+        self.menu_display_list = list_union(
+            self.menu_display_list, 
+            [f"{key_ansi}[{item.key}]\x1b[0m{dash_ansi}-\x1b[0m {message_ansi}{item.message}\x1b[0m"]
+        )
+        self.menu[item.key] = item.funcs
+
+
+    def _update_menu_lists(self):
+        """Regenerates menu lists"""
+        self.menu_display_list = []
+        self.menu = {}
+        for item in self.menu_item_list:
+            self._append_menu_lists(item)
+        self.ch_exit()
+
+
+    def _apply_matching_keywords(self):
+        """Apply matching keywords for end_to and escape_to in order"""
+        self.end_to = self.exit_to if self.end_to is Menu.exit_to else self.end_to
+        self.escape_to = self.exit_to if self.escape_to is Menu.exit_to else self.escape_to
+        self.escape_to = self.end_to if self.escape_to is Menu.end_to else self.escape_to
+
+    
+    def _replace_self_references(self):
+        """Replaces Menu.self with __RUNSELF__ in *_to functions"""
+        menu_funcs = { 'end_to': self.end_to, 'escape_to': self.escape_to, 
+                    'arg_to': self.arg_to, 'exit_to': self.exit_to }
+        for key in menu_funcs:
+            x_to = menu_funcs[key]
+            replaced = replace_value_nested(tupler(x_to), Menu.self, self)[0]
+            setattr(self, key, replaced)
+
+
+    def ch_exit(self, exit_to = None, exit_key = None, exit_message = None) -> None:
+        """Changes the properties of the exit key and appends it to the list"""
+        self.exit_to = exit_to if exit_to else self.exit_to
+        self.exit_key = exit_key if exit_key else self.exit_key
+        self.exit_message = exit_message if exit_message else self.exit_message
+        colors = Menu.exit_colors.merge(self.exit_colors)
+
+        self.exit = Item(
+            key=self.exit_key, message=self.exit_message, 
+            funcs=[(self.exit_to, ())], colors=colors
+        )
+        self.append()
+
+    #==================================================================================
+    # Util
+    #==================================================================================
+
+    @staticmethod
+    def _expand_in_place(A: tuple | list):
+        """Recursively expand all marked tuples/lists in a data structure
+        (a, [b, expanded((c, d))]) -> (a, [b, c, d])
+        """
+        new = []
+        for x in A:
+            # Append all elements if marked as 'expanded'
+            if isinstance(x, Menu._expand):
+                new += list(x)
+            # Run in nesting (recursion)
+            elif isinstance(x, tuple | list):
+                new += [Menu._expand_in_place(x)]
+            # Do nothing
+            else:
+                new += [x]
+        return type(A)(new)
+
+    #==================================================================================
+    # Errors
+    #==================================================================================
+
+    @staticmethod
+    def _check_item_type(*items):
+        for item in items:
+            if not isinstance(item, Item):
+                raise ValueError(f"{item} is not a valid Item")
+            
+
+    def _check_banned_self_refs(self):
+        banned_methods = { 'exit_to': self.exit_to, 'arg_to': self.arg_to  }
+        for method in banned_methods:
+            if banned_methods[method] is Menu.self:
+                raise RecursionError(f"Menu \"{self.name}\" {method} cannot be Menu.self")
+    
+
+    def _check_banned_self_messages(self, arg, method):
+        if isinstance(arg, Menu.__RUNSELF__):
+            raise RecursionError(f"Menu \"{self.name}\" {method} cannot open self")
+        
