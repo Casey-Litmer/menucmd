@@ -3,7 +3,6 @@ from .menu_dict import MenuDict
 from ..src.menucmd import Menu
 from ..src.menu_hooks import *
 from ..src.item import Item
-from ..builtins.builtins import *
 from .utils import *
 
 

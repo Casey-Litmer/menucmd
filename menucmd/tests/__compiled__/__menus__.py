@@ -1,5 +1,4 @@
 from menucmd import *
-from menucmd.builtins import *
 
 result = Menu.result
 kwargs = Menu.kwargs
@@ -8,6 +7,7 @@ B = Bind
 C = Colors
 
 from menucmd.tests.testing_utils import *
+from menucmd.builtins import *
 
 Menu.set_global_colors(colors = MenuColors(key='\x1b[94m\x1b[1m', dash=None, message=None, name=None, empty_message=None, invalid_key=None))
 Menu.set_global_colors(exit_colors = ItemColors(key='\x1b[31m', dash=None, message=None))

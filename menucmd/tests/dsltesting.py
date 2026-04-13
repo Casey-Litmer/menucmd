@@ -11,6 +11,7 @@ def main():
         compile_to_py = True,
         imports = {
             "menucmd.tests.testing_utils" : ['*'],
+            "menucmd.builtins": ['*'],
         }
     )
 

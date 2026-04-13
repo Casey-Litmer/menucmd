@@ -891,7 +891,6 @@ In addtion, the following shorthand refs are included in MCMDlang by default:
 - `C` = `Colors`
 - `kwargs` = `Menu.kwargs`
 - `self` = `Menu.self`
-- All builtins and menu hooks
 
 ---
 
@@ -907,7 +906,7 @@ menus = build_menus(
     generate_spec_file = True, # default True
     imports={
         "my_utils": ["func_a", "func_b"],
-        "other_utils": ["*"]
+        "menucmd.builtins": ["*"]
     }
 )
 ```

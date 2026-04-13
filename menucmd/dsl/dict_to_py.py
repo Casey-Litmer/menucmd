@@ -1,5 +1,4 @@
 from macrolibs.typemacros import dict_intersect
-from ..src.menucmd import Menu
 from .utils import *
 
 
@@ -22,7 +21,6 @@ MENU_ATTRS = {
 
 DEFAULT_IMPORTS = {
     "menucmd": ["*"],
-    "menucmd.builtins": ["*"],
 }
 
 DEFAULT_CONSTANTS = {
