@@ -55,6 +55,8 @@ Use it for quick debugging utilities, as a CLI frontend for scripts, or whenever
 ### 7. MCMDlang (DSL)
    - [Formatting Rules](#formatting-rules)
    - [`build_menus`](#build_menus)
+   - [Compiling to Python](#compiling-to-python)
+
 
 ### 8. Builtins
    - [In-line Functions](#in-line-functions)
@@ -807,12 +809,20 @@ cannot create dynamic menus, it can access any function that does using the pyth
 - Menu id, function references, and function calls are written without quotes.
 - Comments are one line only!  They will not be removed at the end of a line.
 - Blank lines do not matter.
-- You can include `Colors` and `ExitColors` blocks inside a `Menu` declaration. `ExitColors` works like an item color block but applies only to the exit key.
+- You can include `Colors` and `ExitColors` blocks inside a `Menu` declaration or outside of the menus to set global colors. `ExitColors` works like an item color block but applies only to the exit key.
+- You may use line breaks `\` like in regular python.
 
 
 Example .mcmd file:
 ```txt
 ### in menus.mcmd ###
+
+Colors:
+    key: C.LIGHT_GREEN + C.BOLD
+
+ExitColors:
+    key: C.RED + C.BOLD
+    message: C.RED
 
 Menu:
     name: "Main Menu"
@@ -882,6 +892,50 @@ In addtion, the following shorthand refs are included in MCMDlang by default:
 - `kwargs` = `Menu.kwargs`
 - `self` = `Menu.self`
 - All builtins and menu hooks
+
+---
+
+### Compiling to Python
+
+When using `build_menus` in a production environment or when distributing as an executable, you can directly compile to python by setting `compile_to_py` to `True`, and specifying the `imports` to include them in the compiled python:
+
+
+```python
+menus = build_menus(
+    "menus.mcmd", 
+    compile_to_py = True,      # default False
+    generate_spec_file = True, # default True
+    imports={
+        "my_utils": ["func_a", "func_b"],
+        "other_utils": ["*"]
+    }
+)
+```
+
+When using pyinstaller with compiled python, you must compile the .spec file as opposed to the .py file.
+
+**Set generate_spec_file to false if you plan on using your own spec.  In this case you must manually add the compiled.*
+
+#### `compile_to_py` and the Build Flow
+When this flag is `True`, `build_menus` performs the following steps:
+1.  **Code Generation**: It converts your `.mcmd` DSL into a standard Python script (`__menus__.py`).
+2.  **Caching**: It creates a `__compiled__` directory in the same folder as your `.mcmd` file. Inside, it stores the generated Python code, an `__init__.py` for package support.
+3.  **Dynamic Loading**: It imports the generated Python module instead of re-parsing the text file on every execution.
+4.  **Performance**: During development, it only recompiles if the source `.mcmd` file has changed. 
+
+#### Generated File Structure:
+
+```txt
+dir/             
+  __compiled__/
+    __init__.py
+    __mcmdcache__.txt
+    __menus__.py
+    __parser_cache__.json
+  menus.mcmd
+  main.py
+  main.spec
+```
 
 ---
 
@@ -1016,11 +1070,9 @@ print(f"Remaining items: {remaining}")
 ```
 
 Displays the collection as a menu, removes selected items, shows menu again until exit.
+
 ---
 
 ### Dynamic Menus (WIP)
 
 Advanced feature for dynamically modifying menus during execution. This section is under development; use the static menu patterns above for production code.
-
-
-

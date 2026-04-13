@@ -14,6 +14,7 @@ def build_menus(
         file: str, 
         imports: list[str] | dict[str, list[str]] = [],
         compile_to_py = False,
+        generate_spec_file = True
     ) -> MenuDict:
     """Convert .mcmd file to attributable dict of menus"""
 
@@ -82,7 +83,8 @@ def build_menus(
                 save_json(struct_, json_cache_path)
 
                 # Generate .spec file for PyInstaller
-                generate_spec(cwd, file, imports)
+                if generate_spec_file:
+                    generate_spec(cwd, file, imports)
 
         # Create MenuDict from imports
         spec = importlib.util.spec_from_file_location("menus", menus_py_path)
