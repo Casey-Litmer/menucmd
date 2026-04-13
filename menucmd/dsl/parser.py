@@ -21,7 +21,7 @@ def build_menus(
     if not compile_to_py:
 
         # Get mcmd text
-        with open(file) as f:
+        with open(file, 'r') as f:
             file_text = f.read()
             lines = file_text.splitlines()
         f.close()

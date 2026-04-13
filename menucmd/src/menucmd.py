@@ -95,8 +95,8 @@ class Menu:
         self.menu = {}                               #{"key":(function-arg chain)}
 
         # Define breakpoints, apply menu updates
-        self.end_to = lambda x: Menu.__RUNSELF__(x) if end_to is None else end_to
-        self.escape_to = lambda x: Menu.__RUNSELF__(x) if escape_to is None else escape_to
+        self.end_to = (lambda x: Menu.__RUNSELF__(x)) if end_to is None else end_to
+        self.escape_to = (lambda x: Menu.__RUNSELF__(x)) if escape_to is None else escape_to
         self._check_banned_self_refs()
         self._apply_matching_keywords()
         self._replace_self_references()

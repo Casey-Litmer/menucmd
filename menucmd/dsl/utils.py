@@ -47,7 +47,7 @@ def cannonize_menu_ids(menus: MenuDict, target_globals):
 
 
 def parse_funcargs(funcargs: str) -> tuple[str, str]:
-    """"func(arg1, arg2,...)" -> (func, (arg1, arg2))"""
+    """"func(arg1, arg2,...)" -> (func, (arg1, arg2,))"""
     # Extract function.  Works with (lambda:(...))
     func_args_split = funcargs.split('(')
     n_closed_par = 0
@@ -58,6 +58,8 @@ def parse_funcargs(funcargs: str) -> tuple[str, str]:
         if n_closed_par == n+1:
             func_str = "(".join(func_args_split[:-n-1])
             arg_str = "(" + "(".join(func_args_split[-n-1:])
+            arg_str = arg_str.strip()[:-1] + ",)" \
+                if arg_str.strip() != "()" else arg_str
             return (func_str, arg_str)
 
     # Parenthesis Error

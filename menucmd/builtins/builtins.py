@@ -29,7 +29,7 @@ def f_switch(n: int | str | Any, funcs: list | tuple | dict) -> Bind.Wrapper:
 #----------------------------------------------------------------------------------------------------------------------
 #Builtin Menus
 
-Iterables = TypeVar("Iterables", list, tuple, dict, set)
+_Iterables = TypeVar("_Iterables", list, tuple, dict, set)
 
 
 def yesno_ver(yes = True, no = False, yes_message = "yes", **kwargs) -> bool | Any:
@@ -45,7 +45,7 @@ def yesno_ver(yes = True, no = False, yes_message = "yes", **kwargs) -> bool | A
     return menu()
 
 
-def edit_list(entries: Iterables, display_as = lambda x:x, **kwargs) -> Iterables:
+def edit_list(entries: _Iterables, display_as = lambda x:x, **kwargs) -> _Iterables:
     """Delete items in a list/tuple/dict/set; returns updated list/tuple/dict/set"""
 
     kwargs_: dict[str, Any] = {"name":"Edit List"} | kwargs | {"exit_to":lambda: entries}
@@ -95,7 +95,7 @@ def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as 
     return menu()
 
 
-def choose_items(entries: Iterables, display_as = lambda x:x, **kwargs) -> Iterables:
+def choose_items(entries: _Iterables, display_as = lambda x:x, **kwargs) -> _Iterables:
     """Pick and return mutiple elements from a list/tuple/dict/set."""
     return type_compliment(entries, edit_list(entries, display_as = display_as, **kwargs))
 

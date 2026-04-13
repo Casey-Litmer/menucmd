@@ -14,7 +14,8 @@ class Result():
         return r
 
     def __repr__(self):
-        return f"<class Result[{self.__n__}]>" + (".expand()" if self.__expand__ else "")
+        return f"<class Result{f".{self.__attr__}" if self.__attr__ is not None else [{self.__n__}]}>" \
+            + (".expand()" if self.__expand__ else "")
 
     def __eq__(self, other):
         """Compare by attribute if both self and other have attributes"""

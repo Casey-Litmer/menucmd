@@ -126,8 +126,7 @@ def _eval_funcargs(funcargs: str) -> tuple[Any, tuple]:
 
     # Eval Args
     try:
-        args = () if arg_str.strip() == "()" \
-            else eval(arg_str.strip()[:-1] + ",)")
+        args = eval(arg_str)
         
     # Menu.kwargs reminder
     except SyntaxError as e:

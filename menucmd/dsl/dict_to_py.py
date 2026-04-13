@@ -44,12 +44,6 @@ def dict_to_py(struct_: dict, imports_: list[str] | dict[str, list[str]]) -> str
     
     # Get global scope
     retrieve_globals(globals())
-    
-    # Set Global Colors
-    if global_colors := struct_.get("Colors"):
-        Menu.set_global_colors(colors=convert_colors(global_colors, "Menu", globals())) #type: ignore
-    if global_colors := struct_.get("ExitColors"):
-        Menu.set_global_colors(exit_colors=convert_colors(global_colors, "ExitColors", globals()))
 
     default_imports = _set_default_imports()
     constants = _set_constants()
