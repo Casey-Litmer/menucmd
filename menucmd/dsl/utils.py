@@ -11,8 +11,8 @@ self = Menu.self
 B = Bind
 C = Colors
 
-def convert_static_attr_types(static_attrs: dict, globals: dict):
-    """Converts Non-String types"""
+def evaluate_static_attr_types(static_attrs: dict, globals: dict):
+    """Converts Non-String types to literals"""
     for key, val in static_attrs.items():
         if key not in { 'Colors', 'ExitColors' }:
             static_attrs[key] = eval(val, globals)
@@ -44,3 +44,21 @@ def cannonize_menu_ids(menus: MenuDict, target_globals):
     """Adds menu to global scope"""
     for menu_id, menu in menus.items():
         target_globals[menu_id] = menu
+
+
+def parse_funcargs(funcargs: str) -> tuple[str, str]:
+    """"func(arg1, arg2,...)" -> (func, (arg1, arg2))"""
+    # Extract function.  Works with (lambda:(...))
+    func_args_split = funcargs.split('(')
+    n_closed_par = 0
+
+    # Split func and args
+    for n, x in enumerate(func_args_split[::-1]):
+        n_closed_par += x.count(')')
+        if n_closed_par == n+1:
+            func_str = "(".join(func_args_split[:-n-1])
+            arg_str = "(" + "(".join(func_args_split[-n-1:])
+            return (func_str, arg_str)
+
+    # Parenthesis Error
+    raise SyntaxError(f"Unbalanced parenthesis in '{funcargs}'")

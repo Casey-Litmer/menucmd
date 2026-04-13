@@ -55,7 +55,7 @@ def dict_to_objs(struct_: dict) -> MenuDict:
         static_attrs = dict_intersect(attrs, STATIC_ATTRS)
 
         # Convert attrs types
-        convert_static_attr_types(static_attrs, globals())
+        evaluate_static_attr_types(static_attrs, globals())
 
         # Create Menu
         menu = Menu(**static_attrs)
@@ -93,7 +93,7 @@ def dict_to_objs(struct_: dict) -> MenuDict:
     return menus
 
 
-def _append_menu_items( menu: Menu, items: list[dict],):
+def _append_menu_items(menu: Menu, items: list[dict]):
     """
     Converts "Item" list into Items and appends to menu.
     [{key, message, funcs, Colors}, ...] -> Item
@@ -101,8 +101,13 @@ def _append_menu_items( menu: Menu, items: list[dict],):
     for item in items:
         if not item.get('key'):
             raise KeyError("Item must have 'key' attribute")
+        
 
-        funcs = [_parse_funcargs(funcargs) for funcargs in item['func']] if item.get('func') else []
+        funcs = []
+        for funcargs in item["func"] if item.get('func') else []:
+            funcs.append(_eval_funcargs(funcargs))
+
+        #funcs = [parse_funcargs(funcargs) for funcargs in item['func']] if item.get('func') else []
         colors = convert_colors(item['Colors'], "Item", globals()) if item.get('Colors') else None  
         
         # Append Items
@@ -110,40 +115,27 @@ def _append_menu_items( menu: Menu, items: list[dict],):
             key=eval(item["key"]), message=eval(item["message"]), 
             funcs=funcs, colors=colors
         )) 
+
+
+def _eval_funcargs(funcargs: str) -> tuple[Any, tuple]:
+    """"""
+    func_str, arg_str = parse_funcargs(funcargs)
+
+    # Eval Func
+    func = eval(func_str)
+
+    # Eval Args
+    try:
+        args = () if arg_str.strip() == "()" \
+            else eval(arg_str.strip()[:-1] + ",)")
         
-
-def _parse_funcargs(funcargs: str) -> tuple[Any, tuple]:
-    """"func(arg1, arg2,...)" -> (func, (arg1, arg2))"""
-    # Extract function.  Works with (lambda:(...))
-    func_args_split = funcargs.split('(')
-    n_closed_par = 0
-
-    # Split func and args
-    for n, x in enumerate(func_args_split[::-1]):
-        n_closed_par += x.count(')')
-        if n_closed_par == n+1:
-            func_str = "(".join(func_args_split[:-n-1])
-            arg_str = "(" + "(".join(func_args_split[-n-1:])
-
-            # Eval Func
-            func = eval(func_str)
-            
-            # Eval Args
-            try:
-                args = () if arg_str.strip() == "()" \
-                    else eval(arg_str.strip()[:-1] + ",)")
-                
-            # Menu.kwargs reminder
-            except SyntaxError as e:
-                if '=' in arg_str and '==' not in arg_str and ':=' not in arg_str:
-                    raise SyntaxError(
-                        f"Invalid keyword argument syntax in '{funcargs}'.\n"
-                        f"All keyword arguments must be wrapped in 'Menu.kwargs()'.\n"
-                    ) from e
-                raise SyntaxError from e
-
-            # Return tuple
-            return (func, args)
-
-    # Parenthesis Error
-    raise SyntaxError(f"Unbalanced parenthesis in '{funcargs}'")
+    # Menu.kwargs reminder
+    except SyntaxError as e:
+        if '=' in arg_str and '==' not in arg_str and ':=' not in arg_str:
+            raise SyntaxError(
+                f"Invalid keyword argument syntax in '{funcargs}'.\n"
+                f"All keyword arguments must be wrapped in 'Menu.kwargs()'.\n"
+            ) from e
+        raise SyntaxError from e
+    
+    return func, args
