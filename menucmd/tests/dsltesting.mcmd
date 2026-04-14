@@ -1,5 +1,6 @@
 Colors:
     key: C.LIGHT_BLUE + C.BOLD
+    empty_message: C.RED + C.BLINK
 
 ExitColors:
     key: C.RED
@@ -21,6 +22,10 @@ Menu:
         key: "d"
         message: "Test Dynamic Menus"
         func: open_menu(dynamic_menu)
+    Item:
+        key: "c"
+        message: "Test Config Menus"
+        func: open_menu(config_menu)
 
 Menu:
     name: "Lazy Eval"
@@ -151,4 +156,36 @@ Menu:
         func: print(result)
         func: menu_B(B(lambda n: n+1, result[-2]))
 
-    
+Menu:
+    name: "Config Menus"
+    id: config_menu
+    arg_to: cfg.get_config()
+    exit_to: to_menu(main_menu)
+
+    Colors:
+        key: C.GREEN + C.BOLD
+
+    Item:
+        key: "$"
+        message: "Settings"
+        func: cfg.open_settings_menu(result.CONFIG, kwargs(name = "Settings"))
+    Item:
+        key: "#"
+        message: "Show Command History"
+        Colors:
+            key: C.CYAN + C.BOLD
+        func: cfg.get_command_history(result.CONFIG, kwargs(colors=MenuColors(key=C.CYAN + C.BOLD)))
+        func: print(result.COMMAND)
+    Item:
+        key: "z"
+        message: "Clear Command History"
+        func: cfg.clear_command_history(result.CONFIG)
+        func: print("Command History Cleared")
+        func: cfg.save_config(result.CONFIG)
+    Item:
+        key: "x"
+        message: "Run Command"
+        func: run_command()
+        func: cfg.add_to_history(result[0].CONFIG, result.COMMAND)
+        #func: print(result.COMMAND)
+        func: cfg.save_config(result.CONFIG)

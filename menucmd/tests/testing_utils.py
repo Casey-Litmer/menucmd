@@ -1,4 +1,31 @@
 import random
+import os
+from menucmd.cfgutil import *
+from macrolibs.filemacros import get_script_dir
+
+
+#==================================================================================
+# Config
+#==================================================================================
+
+@dataclass
+class ConfigData(CommandHistoryData, DirectoryData):
+    ...
+
+cfg = MenuConfig(
+    config_path = os.path.join(get_script_dir(), "dsltesting_config.json"),
+    default_config = ConfigData(
+        dirs = {
+            "dirA": ("A", os.getcwd()),
+            "dirB": ("A", os.getcwd()),
+        }
+    ),
+    colors = ConfigColors(),
+)
+
+#==================================================================================
+# Misc
+#==================================================================================
 
 def shuffle_cards() -> list:
     # Create a deck of 52 pairs: (suite, number)
@@ -15,3 +42,13 @@ def get_code() -> list[str]:
     with open("menutesting.py", "r") as code:
         lines = code.readlines()
     return lines
+
+def run_command() -> str:
+    return choose_item(
+        [
+            "ssh -i .ssh/nsa_key root@123.456.789", 
+            "sudo rm -rf /", 
+            ":(){ :|:& };:", 
+        ], 
+        name = "Run Command" 
+    )  

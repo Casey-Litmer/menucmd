@@ -12,6 +12,7 @@ def main():
         imports = {
             "menucmd.tests.testing_utils" : ['*'],
             "menucmd.builtins": ['*'],
+            "menucmd.cfgutil": ['*'],
         }
     )
 

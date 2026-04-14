@@ -8,8 +8,9 @@ C = Colors
 
 from menucmd.tests.testing_utils import *
 from menucmd.builtins import *
+from menucmd.cfgutil import *
 
-Menu.set_global_colors(colors = MenuColors(key='\x1b[94m\x1b[1m', dash=None, message=None, name=None, empty_message=None, invalid_key=None))
+Menu.set_global_colors(colors = MenuColors(key='\x1b[94m\x1b[1m', dash=None, message=None, name=None, empty_message='\x1b[31m\x1b[5m', invalid_key=None))
 Menu.set_global_colors(exit_colors = ItemColors(key='\x1b[31m', dash=None, message=None))
 
 main_menu = Menu(
@@ -52,6 +53,14 @@ menu_B = Menu(
         message = C.FAINT,
     ),
 )
+config_menu = Menu(
+    name = "Config Menus",
+    arg_to = cfg.get_config(),
+    exit_to = to_menu(main_menu),
+    colors = MenuColors(
+        key = C.GREEN + C.BOLD,
+    ),
+)
 
 main_menu.append(
     Item(
@@ -73,6 +82,13 @@ main_menu.append(
         message = 'Test Dynamic Menus',
         funcs = [
             (open_menu, (dynamic_menu,)),
+        ]
+    ),
+    Item(
+        key = 'c',
+        message = 'Test Config Menus',
+        funcs = [
+            (open_menu, (config_menu,)),
         ]
     ),
 )
@@ -198,6 +214,44 @@ menu_B.append(
             (escape_on, (result, 3,)),
             (print, (result,)),
             (menu_B, (B(lambda n: n+1, result[-2]),)),
+        ]
+    ),
+)
+config_menu.append(
+    Item(
+        key = '$',
+        message = 'Settings',
+        funcs = [
+            (cfg.open_settings_menu, (result.CONFIG, kwargs(name = "Settings"),)),
+        ]
+    ),
+    Item(
+        key = '#',
+        message = 'Show Command History',
+        colors = ItemColors(
+            key = C.CYAN + C.BOLD,
+        ),
+        funcs = [
+            (cfg.get_command_history, (result.CONFIG, kwargs(colors=MenuColors(key=C.CYAN + C.BOLD)),)),
+            (print, (result.COMMAND,)),
+        ]
+    ),
+    Item(
+        key = 'z',
+        message = 'Clear Command History',
+        funcs = [
+            (cfg.clear_command_history, (result.CONFIG,)),
+            (print, ("Command History Cleared",)),
+            (cfg.save_config, (result.CONFIG,)),
+        ]
+    ),
+    Item(
+        key = 'x',
+        message = 'Run Command',
+        funcs = [
+            (run_command, ()),
+            (cfg.add_to_history, (result[0].CONFIG, result.COMMAND,)),
+            (cfg.save_config, (result.CONFIG,)),
         ]
     ),
 )
