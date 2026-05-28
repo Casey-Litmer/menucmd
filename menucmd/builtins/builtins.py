@@ -45,9 +45,10 @@ def yesno_ver(yes = True, no = False, yes_message = "yes", **kwargs) -> bool | A
     return menu()
 
 
-def edit_list(entries: _Iterables, display_as = lambda x:x, **kwargs) -> _Iterables:
+def edit_list(entries: _Iterables, display_as = None, **kwargs) -> _Iterables:
     """Delete items in a list/tuple/dict/set; returns updated list/tuple/dict/set"""
 
+    display_as = (lambda x: x) if display_as is None else display_as
     kwargs_: dict[str, Any] = {"name":"Edit List"} | kwargs | {"exit_to":lambda: entries}
     menu = Menu(**kwargs_)
 
@@ -72,11 +73,12 @@ def edit_list(entries: _Iterables, display_as = lambda x:x, **kwargs) -> _Iterab
     return type(entries)(menu()) #type: ignore
 
 
-def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as = lambda x:x, **kwargs) -> Any:
+def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as = None, **kwargs) -> Any:
     """Pick and return an element from a list/tuple/dict/set.
     Returns (key, value) pair for dict.
     On exit key, return 'exit_val' (None by default)
     """
+    display_as = (lambda x: x) if display_as is None else display_as
     kwargs_: dict[str, Any] = {"name": "Choose Item"} | kwargs | {"exit_to": lambda: exit_val}
     menu = Menu(**kwargs_)
 
@@ -95,7 +97,7 @@ def choose_item(entries: list | tuple | dict | set, exit_val = None, display_as 
     return menu()
 
 
-def choose_items(entries: _Iterables, display_as = lambda x:x, **kwargs) -> _Iterables:
+def choose_items(entries: _Iterables, display_as = None, **kwargs) -> _Iterables:
     """Pick and return mutiple elements from a list/tuple/dict/set."""
     return type_compliment(entries, edit_list(entries, display_as = display_as, **kwargs))
 

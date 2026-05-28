@@ -18,7 +18,7 @@ UTIL_MENU_COLORS = MenuColors(
 #==================================================================================
 
 @dataclass
-class ConfigData(CommandHistoryData, DirectoryData):
+class ConfigData(HistoryData, DirectoryData):
     ...
 
 cfg = MenuConfig(

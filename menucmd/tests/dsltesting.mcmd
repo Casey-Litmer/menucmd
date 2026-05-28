@@ -162,17 +162,21 @@ Menu:
         key: C.GREEN + C.BOLD
 
     Item: cfg.settings_item()
-    Item:
-        key: "#"
-        message: "Show Command History"
-        Colors:
-            key: C.CYAN + C.BOLD
-        func: cfg.get_command_history(result.CONFIG)
-        func: print(result.COMMAND)
+    Item: cfg.history_item( \
+        menu_name = "Command History", \
+        message = "Show Command History", \
+        callback = print)
+    #Item:
+    #    key: "#"
+    #    message: "Show Command History"
+    #    Colors: 
+    #        key: cfg.colors.history_color
+    #    func: cfg.get_history(result.CONFIG)
+    #    func: print(result.COMMAND)
     Item:
         key: "z"
         message: "Clear Command History"
-        func: cfg.clear_command_history(result.CONFIG)
+        func: cfg.clear_history(result.CONFIG)
         func: print("Command History Cleared")
         func: cfg.save_config(result.CONFIG)
     Item:

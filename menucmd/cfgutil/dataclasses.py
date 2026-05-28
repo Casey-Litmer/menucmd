@@ -9,8 +9,8 @@ class BaseData:
 
 
 @dataclass
-class CommandHistoryData(BaseData):
-    command_history: list[Any] = field(default_factory=list)
+class HistoryData(BaseData):
+    history: list[Any] = field(default_factory=list)
     history_length: int = 6
 
 

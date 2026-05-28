@@ -57,6 +57,7 @@ class MenuConfig:
                       exit_to = f_end,
                       colors = MenuColors(),
                       exclude_from_list = [],
+                      **kwargs
                       ):
         """Returns a menu of settings based on the config struct provided."""
         _colors = self._merge_colors()
@@ -66,14 +67,18 @@ class MenuConfig:
             invalid_key = _colors.error_color
         ))
 
+        _kwargs = dict(kwargs)
+        _kwargs.pop("arg_to", None)
+
         menu = Menu(
             name = name, 
             arg_to = self._show_settings(exclude_from_list),
             exit_to = exit_to,
             colors = colors,
+            **_kwargs,
         )
 
-        if isinstance(config, CommandHistoryData):
+        if isinstance(config, HistoryData):
             menu.append(
                 Item(
                     key = "h", 
@@ -106,6 +111,7 @@ class MenuConfig:
                       message = "Settings", 
                       colors: ItemColors = ItemColors(),
                       menu_colors: MenuColors = MenuColors(),
+                      display_as = None,
                      ) -> Item:
         """Returns a menu item for accessing settings."""
 
@@ -125,7 +131,8 @@ class MenuConfig:
                         Menu.result.CONFIG, 
                         Menu.kwargs(
                             name = menu_name, 
-                            colors = menu_colors
+                            colors = menu_colors,
+                            display_as = display_as,
                         )
                     )
                 ),
@@ -139,7 +146,7 @@ class MenuConfig:
             c_settings = self._merge_colors().settings_color
             print('\n')
 
-            if isinstance(config, CommandHistoryData) and "history_length" not in exclude_from_list:
+            if isinstance(config, HistoryData) and "history_length" not in exclude_from_list:
                 print(f"{c_settings}Max History Length:{C.END} {config.history_length}")
             
             if isinstance(config, DirectoryData):
@@ -155,10 +162,10 @@ class MenuConfig:
     # Command History
     #==================================================================================
 
-    def add_to_history(self, config: CommandHistoryData, command, compare_as = None):
+    def add_to_history(self, config: HistoryData, command, compare_as = None):
         """Adds a command to the history."""
         # Add to history
-        config.command_history.append(command)
+        config.history.append(command)
 
         # Automatic flattening comparison for commands as BaseData
         if not compare_as:
@@ -167,44 +174,89 @@ class MenuConfig:
                 compare_as = asdict
 
         # Flatten and limit command history
-        config.command_history = list_union([config.command_history], compare_as=compare_as)
-        config.command_history = config.command_history[:config.history_length]
+        config.history = list_union([config.history], compare_as=compare_as)
+        config.history = config.history[:config.history_length]
 
 
-    def clear_command_history(self, config: CommandHistoryData):
+    def clear_history(self, config: HistoryData):
         """Clears command history in config."""
-        config.command_history = []
+        config.history = []
 
 
-    def get_command_history(self, config: CommandHistoryData, callback: Callable | None = None, **kwargs) -> str | object:
+    def get_history(self, 
+                    config: HistoryData, 
+                    colors: MenuColors = MenuColors(),
+                    empty_message = "History is empty.",
+                    exit_val = Menu.escape,
+                    **kwargs) -> str | object:
         """Returns a menu of command history to choose from. Returns Menu.escape on exit."""
         _colors = self._merge_colors()   
-        command_history = config.command_history
-        
+        colors = colors.merge(MenuColors(
+            key = _colors.history_color,
+            message = _colors.message_color,
+            invalid_key = _colors.error_color
+        ))
+
         # Choose command
         return choose_item(
-            command_history, 
-            exit_val = Menu.escape, 
-            empty_message= "Command history is empty.",
-            colors = MenuColors(
-                key = _colors.history_color,
-                message = _colors.message_color,
-                invalid_key = _colors.error_color
-            ),
+            config.history, 
+            exit_val = exit_val, 
+            empty_message = empty_message,
+            colors = colors,
             **kwargs,
         )
     
-    def _change_history_length(self, config: CommandHistoryData):
+
+    def history_item(self, 
+                      callback = None,
+                      menu_name = "History",
+                      key = "#",
+                      message = "History", 
+                      colors: ItemColors = ItemColors(),
+                      menu_colors: MenuColors = MenuColors(),
+                      display_as = None,
+                     ) -> Item:
+        """
+        Returns an item for selecting from history.  Use callback to do something with the selection.  
+        The Item returns "None" by default.
+        """
+        _colors = self._merge_colors()
+        colors = colors.merge(ItemColors(
+            key = _colors.history_color,
+        ))
+
+        _callback = f_end if callback is None else callback
+
+        return Item(
+            key = key, 
+            message = message,
+            colors = colors,
+            funcs = [
+                (
+                    self.get_history, 
+                    (
+                        Menu.result.CONFIG, 
+                        Menu.kwargs(
+                            name = menu_name, 
+                            colors = menu_colors,
+                            display_as = display_as,
+                        )
+                    )
+                ),
+                (_callback, Menu.result),
+            ],
+        )
+    
+
+    def _change_history_length(self, config: HistoryData):
         """Update config history length."""
         _colors = self._merge_colors()
-        c_settings = _colors.settings_color
-        c_error = _colors.error_color
 
-        while new_length := input(f"{c_settings}New Length:{C.END} "):
+        while new_length := input(f"{_colors.settings_color}New Length:{C.END} "):
             if not new_length.strip():
                 return
             if not new_length.strip().isdigit():
-                print(f"{c_error}{new_length} is not a postive number.{C.END}")
+                print(f"{_colors.error_color}{new_length} is not a postive number.{C.END}")
                 continue
             config.history_length = int(new_length)
             break
@@ -219,12 +271,10 @@ class MenuConfig:
         Takes the config struct and stores the user input into the corresponding key.
         """
         _colors = self._merge_colors()
-        c_settings = _colors.settings_color
-        c_message = _colors.message_color
 
         # Get new dir
-        print(f"{c_message}('cwd' for current directory){C.END}")
-        new_dir = input(f"{c_settings}New {config.dirs[name][0]}:{C.END} ").strip()
+        print(f"{_colors.message_color}('cwd' for current directory){C.END}")
+        new_dir = input(f"{_colors.settings_color}New {config.dirs[name][0]}:{C.END} ").strip()
         
         # Return on empty
         if not new_dir:

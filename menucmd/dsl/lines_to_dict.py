@@ -71,7 +71,6 @@ def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_bl
 
             # Exit Scope on De-Indent
             if current_indent < expected_indent:
-                print(f"Exiting {last_block_name} block")
                 return block, n
             
             # Raise Error on Over-Indent

@@ -63,6 +63,15 @@ Use it for quick debugging utilities, as a CLI frontend for scripts, or whenever
    - [Builtin Menus](#builtin-menus)
    - [Dynamic Menus (WIP)](#dynamic-menus-wip)
 
+### 9. Config Utility
+   - [Config Pattern Overview: `MenuConfig`](#config-pattern-overview-menuconfig)
+   - [Defining Config Data: `HistoryData`, `DirectoryData`](#defining-config-data-historydata-directorydata)
+   - [Loading Config Into Menus: `get_config`](#loading-config-into-menus-get_config)
+   - [Saving Configs `save_config`](#saving-configs-save_config)
+   - [Built-in Menu Items: `settings_item`, `history_item`](#built-in-menu-items-settings_item-history_item)    
+   - [Manual History and Settings Flows `get_history`, `open_settings_menu`, `add_to_history`](#manual-history-and-settings-flows-get_history-open_settings_menu-add_to_history)
+   - [Custom Colors: `ConfigColors`](#custom-colors-configcolors)
+
 ---
 
 ## 1. Hello World
@@ -810,6 +819,7 @@ cannot create dynamic menus, it can access any function that does using the pyth
 - Comments are one line only!  They will not be removed at the end of a line.
 - Blank lines do not matter.
 - You can include `Colors` and `ExitColors` blocks inside a `Menu` declaration or outside of the menus to set global colors. `ExitColors` works like an item color block but applies only to the exit key.
+- Item, Colors, and ExitColors may also accept a literal value.
 - You may use line breaks `\` like in regular python.
 
 
@@ -848,15 +858,26 @@ Menu:
         key: "y"
         message: "Go to menu2" 
         func: open_menu(menu2)
+
+    # Also acceptable
+    Item: Item(key="z", ...)
         
 Menu:
     name: "Second Menu"
     id: menu2
     exit_to: to_menu(main_menu)
+
+    # Also acceptable
+    Colors: MenuColors(...)
+    ExitColors: ItemColors(...)
     
     Item:
         key: "z"
         message: "Goodbye World!"
+        
+        # Also acceptable
+        Colors: ItemColors(...)
+        
         func: print("Goodbye World!")
 ```
 
@@ -1075,3 +1096,162 @@ Displays the collection as a menu, removes selected items, shows menu again unti
 ### Dynamic Menus (WIP)
 
 Advanced feature for dynamically modifying menus during execution. This section is under development; use the static menu patterns above for production code.
+
+
+## 9. Config Utility
+
+The `cfgutil` module makes it easy to store menu config in JSON, manage command history, and expose directory shortcuts for interactive menus.
+
+### Config Pattern Overview: `MenuConfig`
+
+`MenuConfig` wraps a default dataclass with a path to a JSON file. It loads the config when a menu starts, lets your menu functions update it in place, and persists the result when you call `save_config()`.
+
+### Defining Config Data: `HistoryData`, `DirectoryData`
+
+`cfgutil` provides simple dataclasses for common patterns:
+- `HistoryData`: adds `history` and `history_length`
+- `DirectoryData`: adds a `dirs` mapping
+- `BaseData`: shared base class for config structs
+
+```python
+from dataclasses import dataclass
+from menucmd.cfgutil import HistoryData, DirectoryData, MenuConfig
+
+@dataclass
+class AppConfig(HistoryData, DirectoryData):
+    pass
+
+cfg = MenuConfig(
+    config_path="config.json",
+    default_config=AppConfig(
+        dirs={
+            "work": ("w", "/path/to/work"),
+            "output": ("o", "/path/to/output"),
+        },
+        history_length=10,
+    ),
+)
+```
+
+### Loading Config Into Menus: `get_config`
+
+Use `cfg.get_config()` in `arg_to` to load the config file and pass the config object into every menu item as `result.CONFIG`.
+
+```txt
+Menu:
+    id: main_menu
+    arg_to: cfg.get_config()
+
+    Item:
+        key: "p"
+        message: "Print config"
+        func: print(result.CONFIG)
+```
+
+`get_config` creates the JSON file automatically from `default_config` when needed.
+
+### Saving Configs `save_config`
+
+After modifying the config object, call `cfg.save_config(result.CONFIG)` to persist it.
+
+```txt
+Item:
+    key: "s"
+    message: "Save settings"
+    func: update_settings(result.CONFIG)
+    func: cfg.save_config(result.CONFIG)
+```
+
+### Built-in Menu Items: `settings_item`, `history_item`
+
+`MenuConfig` includes helper items for the most common workflows.
+
+#### `settings_item`
+
+Returns an `Item` that opens a settings submenu for editing directories and history length.
+
+```txt
+Menu:
+    id: main_menu
+    arg_to: cfg.get_config()
+    Item: cfg.settings_item()
+```
+
+#### `history_item`
+
+Returns an `Item` that opens a history selection menu.
+
+```txt
+Menu:
+    id: main_menu
+    arg_to: cfg.get_config()
+    Item: cfg.history_item(callback=print)
+```
+
+### Manual History and Settings Flows `get_history`, `open_settings_menu`, `add_to_history`
+
+If you want more control, use the lower-level helpers directly.
+
+#### `get_history`
+
+`get_history` returns a selection menu built from `config.history`.
+
+```txt
+Item:
+    key: "#"
+    message: "History"
+    Colors:
+        key: cfg.colors.history_color
+    func: cfg.get_history(result.CONFIG, name="Command History")
+    func: print(result)
+```
+
+#### `open_settings_menu`
+
+`open_settings_menu` returns a menu object that lets users edit directory paths and history length.
+
+```txt
+Item:
+    key: "$"
+    message: "Settings"
+    Colors:
+        key: cfg.colors.settings_color
+    func: cfg.open_settings_menu(result.CONFIG, name="Config Settings")
+```
+
+#### `add_to_history`
+
+Use this to add a command or result to the persistent history list. It automatically deduplicates entries and keeps the history within `history_length`.
+
+```txt
+Item:
+    key: "r"
+    message: "Run and log"
+    func: run_command()
+    func: cfg.add_to_history(result.CONFIG, result)
+    func: cfg.save_config(result.CONFIG)
+```
+
+If you store objects in history, pass `compare_as=asdict` to compare entries by value.
+
+### Custom Colors: `ConfigColors`
+
+Pass `ConfigColors` to `MenuConfig` to keep settings and history menus on-theme.
+
+```python
+from menucmd import Colors as C
+from menucmd.cfgutil import ConfigColors
+
+cfg = MenuConfig(
+    config_path = "config.json",
+    default_config = AppConfig(...),
+    colors = ConfigColors(
+        settings_color = C.YELLOW + C.BOLD,
+        history_color = C.CYAN,
+        error_color = C.RED,
+        message_color = C.WHITE
+    ),
+)
+```
+
+`ConfigColors` overwrites the current menu colors for the cfg menus.
