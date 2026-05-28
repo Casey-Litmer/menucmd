@@ -61,6 +61,20 @@ def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_bl
         line = lines[n]
         stripped = line.strip()
 
+        
+        # Only check indent outside of line breaks
+        if len(line_segments) == 0:
+            current_indent = _get_indent(line)
+
+            # Exit Scope on De-Indent
+            if current_indent < expected_indent:
+                print(f"Exiting {last_block_name} block")
+                return block, n
+            
+            # Raise Error on Over-Indent
+            if current_indent > expected_indent:
+                raise IndentationError(line)
+
         # Track Line Breaks
         if stripped[-1] == '\\':
             line_segments.append(stripped[:-1].strip())
@@ -70,20 +84,10 @@ def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_bl
             line_segments.append(stripped)
             stripped = ' '.join(line_segments)
             line_segments = []
-        else:
-            # Only update indent outside of line breaks
-            current_indent = _get_indent(line)
-
-        # Exit Scope
-        if current_indent < expected_indent:
-            return block, n
-        
-        # Over-Indent
-        if current_indent > expected_indent:
-            raise IndentationError(line)
         
         # Block header (any line ending with ':')
         if stripped.endswith(':'):
+        # TODO: Allow Constructors (See cfgutil new methods)
             block_name = stripped[:-1]
 
             # First block must be Menu
