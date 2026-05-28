@@ -30,7 +30,8 @@ class MenuConfig:
     def get_config(self, callback = None):
         """
         Returns a wrapper function that retrieves the config from the 
-        json file and applies a callback if provided.
+        json file and applies a callback if provided.  Primarily used 
+        for arg_to.
         """
         def wrapper(config: BaseData | None = None):
             if not config:
@@ -39,7 +40,8 @@ class MenuConfig:
                 config = callback(config) if callback else _ConfigType(**json)
             return config
         return wrapper
-    
+
+
     def save_config(self, config: BaseData, callback: Callable | None = None):
         """Saves config to json file."""
         json = asdict(callback(config) if callback is not None else config)
@@ -52,23 +54,23 @@ class MenuConfig:
     def open_settings_menu(self, 
                       config: BaseData,
                       name = "Settings", 
+                      exit_to = f_end,
+                      colors = MenuColors(),
                       exclude_from_list = [],
-                      **kwargs
                       ):
-        """"""
+        """Returns a menu of settings based on the config struct provided."""
         _colors = self._merge_colors()
+        colors = colors.merge(MenuColors(
+            key = _colors.settings_color,
+            message = _colors.message_color,
+            invalid_key = _colors.error_color
+        ))
 
         menu = Menu(
             name = name, 
             arg_to = self._show_settings(exclude_from_list),
-            exit_to = f_end,
-            end_to = Menu.exit_to,
-            colors = MenuColors(
-                key = _colors.settings_color,
-                message = _colors.message_color,
-                invalid_key = _colors.error_color
-            ),
-            **kwargs,
+            exit_to = exit_to,
+            colors = colors,
         )
 
         if isinstance(config, CommandHistoryData):
@@ -84,8 +86,6 @@ class MenuConfig:
             )
         
         if isinstance(config, DirectoryData):
-            from pprint import pprint
-            print(config.dirs)
             menu.append(*[
                 Item(
                     key = key, 
@@ -98,6 +98,39 @@ class MenuConfig:
             ])
 
         return menu(config)
+    
+
+    def settings_item(self, 
+                      menu_name = "Settings",
+                      key = "$",
+                      message = "Settings", 
+                      colors: ItemColors = ItemColors(),
+                      menu_colors: MenuColors = MenuColors(),
+                     ) -> Item:
+        """Returns a menu item for accessing settings."""
+
+        _colors = self._merge_colors()
+        colors = colors.merge(ItemColors(
+            key = _colors.settings_color,
+        ))
+
+        return Item(
+            key = key, 
+            message = message,
+            colors = colors,
+            funcs = [
+                (
+                    self.open_settings_menu, 
+                    (
+                        Menu.result.CONFIG, 
+                        Menu.kwargs(
+                            name = menu_name, 
+                            colors = menu_colors
+                        )
+                    )
+                ),
+            ],
+        )
     
 
     def _show_settings(self, exclude_from_list: list[str]):
@@ -116,36 +149,6 @@ class MenuConfig:
 
             return config
         return wrapper
-    
-
-    def settings_item(self, **kwargs):
-        """"""
-        item_colors = kwargs.pop("colors", ItemColors())
-
-        c_settings = self._merge_colors().settings_color
-
-        return Item(
-            key = "$", 
-            message = "Settings",
-            colors = item_colors.merge(ItemColors(
-                key = c_settings,
-            )),
-            funcs = [
-                (
-                    self.open_settings_menu, 
-                    (
-                        Menu.result, 
-                        Menu.kwargs(
-                            name = "Settings", 
-                            colors = MenuColors(
-                                key = c_settings
-                            )
-                        )
-                    )
-                ),
-            ],
-            **kwargs,
-        )
     
 
     #==================================================================================
@@ -205,37 +208,6 @@ class MenuConfig:
                 continue
             config.history_length = int(new_length)
             break
-
-    
-    def command_history_item(self, **kwargs):
-        """"""
-        item_colors = kwargs.pop("colors", ItemColors())
-        
-        c_history = self._merge_colors().history_color
-
-        colors = item_colors.merge(ItemColors(
-            key = c_history,
-        ))
-
-        return Item(
-            key = "#",
-            message = "Show Command History",
-            colors = colors,
-            funcs = [
-                (
-                    self.get_command_history,
-                    (
-                        Menu.result, 
-                        Menu.kwargs(
-                            name = "Show Command History", 
-                            colors = colors,
-                            **kwargs,
-                        )
-                    )
-                ),
-            ],
-            **kwargs,
-        )
 
     #==================================================================================
     # Directories

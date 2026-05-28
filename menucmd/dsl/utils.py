@@ -28,10 +28,13 @@ def evaluate_static_attr_types(static_attrs: dict, globals: dict):
         del static_attrs['ExitColors']
 
 
-def convert_colors(colors: dict, block: str, globals: dict) -> MenuColors | ItemColors:
+def convert_colors(colors: dict | str, block: str, globals: dict) -> MenuColors | ItemColors:
     """Evaluates ANSI color schemes"""
     scheme = {'Menu': MenuColors, 'Item': ItemColors, 'ExitColors': ItemColors}[block]
-    return scheme(**dict([k, eval(v, globals)] for k, v in colors.items()))
+    if isinstance(colors, str):
+        return eval(colors, globals)
+    else:
+        return scheme(**dict([k, eval(v, globals)] for k, v in colors.items()))
 
 
 def retrieve_globals(target_globals):

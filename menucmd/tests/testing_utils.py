@@ -4,6 +4,14 @@ from menucmd import Colors as C
 from menucmd.cfgutil import *
 from macrolibs.filemacros import get_script_dir
 
+#==================================================================================
+# Colors
+#==================================================================================
+
+UTIL_MENU_COLORS = MenuColors(
+    key = C.RED,
+    message = C.FAINT,
+)
 
 #==================================================================================
 # Config

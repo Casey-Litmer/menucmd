@@ -129,9 +129,7 @@ Menu:
     exit_to: to_menu(lazy_menu)
     end_to: Menu.exit_to
 
-    Colors:
-        key: C.RED
-        message: C.FAINT
+    Colors: UTIL_MENU_COLORS
 
     Item:
         key: "m"
@@ -145,9 +143,7 @@ Menu:
     exit_to: to_menu(dynamic_menu)
     escape_to: Menu.exit_to
 
-    Colors:
-        key: C.RED
-        message: C.FAINT
+    Colors: UTIL_MENU_COLORS
         
     Item:
         key: "s"
@@ -165,12 +161,7 @@ Menu:
     Colors:
         key: C.GREEN + C.BOLD
 
-    Item:
-        key: "$"
-        message: "Settings"
-        Colors:
-            key: C.YELLOW + C.BOLD
-        func: cfg.open_settings_menu(result.CONFIG, kwargs(name = "Settings"))
+    Item: cfg.settings_item()
     Item:
         key: "#"
         message: "Show Command History"

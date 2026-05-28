@@ -43,27 +43,27 @@ def dict_to_objs(struct_: dict) -> MenuDict:
         Menu.set_global_colors(exit_colors=convert_colors(global_colors, "ExitColors", globals()))
 
     # Initlialize all menus with only static attributes to a dict indexed by 'ID'
-    for attrs in struct_["Menu"]:
+    for menu in struct_["Menu"]:
         # Require id
-        if not attrs.get('id'):
+        if not menu.get('id'):
             raise KeyError("Menu must have an 'id' attribute")
-        menu_id = attrs['id']
+        menu_id = menu['id']
         
         # Compare all attributes defined in dsl script, and only feed into Menu 
         # if it intersects with the blank dict
-        static_attrs = dict_intersect(attrs, STATIC_ATTRS)
+        static_attrs = dict_intersect(menu, STATIC_ATTRS)
 
         # Convert attrs types
         evaluate_static_attr_types(static_attrs, globals())
 
         # Create Menu
-        menu = Menu(**static_attrs)
+        _menu = Menu(**static_attrs)
 
         # Add id
-        setattr(menu, "_id", menu_id)
+        setattr(_menu, "_id", menu_id)
 
         # Add to list
-        menus.append(menu)
+        menus.append(_menu)
 
     # Convert list to attributable dict: {menu_id: Menu}
     menus = MenuDict(menus)
@@ -94,26 +94,33 @@ def dict_to_objs(struct_: dict) -> MenuDict:
 
 def _append_menu_items(menu: Menu, items: list[dict]):
     """
-    Converts "Item" list into Items and appends to menu.
-    [{key, message, funcs, Colors}, ...] -> Item
+    Converts "Item" list or string into Items and appends to menu.
+    [{key, message, funcs, Colors}, ...] | str -> Item
     """
     for item in items:
-        if not item.get('key'):
-            raise KeyError("Item must have 'key' attribute")
-        
+        # Evaluate literal Item
+        if isinstance(item, str):
+            _item = eval(item)
+            
+        # Construct Item from dict
+        else:
+            if not item.get('key'):
+                raise KeyError("Item must have 'key' attribute")
 
-        funcs = []
-        for funcargs in item["func"] if item.get('func') else []:
-            funcs.append(_eval_funcargs(funcargs))
+            funcs = []
+            for funcargs in item["func"] if item.get('func') else []:
+                funcs.append(_eval_funcargs(funcargs))
 
-        #funcs = [parse_funcargs(funcargs) for funcargs in item['func']] if item.get('func') else []
-        colors = convert_colors(item['Colors'], "Item", globals()) if item.get('Colors') else None  
+            #funcs = [parse_funcargs(funcargs) for funcargs in item['func']] if item.get('func') else []
+            colors = convert_colors(item['Colors'], "Item", globals()) if item.get('Colors') else None  
+
+            _item = Item(
+                key=eval(item["key"]), message=eval(item["message"]), 
+                funcs=funcs, colors=colors
+            )
         
-        # Append Items
-        menu.append(Item(
-            key=eval(item["key"]), message=eval(item["message"]), 
-            funcs=funcs, colors=colors
-        )) 
+        # Append Item
+        menu.append(_item) 
 
 
 def _eval_funcargs(funcargs: str) -> tuple[Any, tuple]:

@@ -132,14 +132,19 @@ def _set_menus(struct_: dict) -> tuple[str, str]:
     return menus, items
 
 
-def _set_colors(colors_: dict, color_type: str, indent: int = 4) -> str:
+def _set_colors(colors_: dict | str, color_type: str, indent: int = 4) -> str:
     """
     Constructs a Color object string with specified indentation.
     """
-    colors = f"{color_type}(\n"
-    colors += "".join([" " * (indent + 4) + f"{key} = {val},\n" for key, val in colors_.items()])
-    colors += " " * (indent + 0) + ")"
-    return colors
+    if isinstance(colors_, str):
+        # Add literal Colors
+        return colors_
+    else:
+        # Construct Colors from dict
+        colors = f"{color_type}(\n"
+        colors += "".join([" " * (indent + 4) + f"{key} = {val},\n" for key, val in colors_.items()])
+        colors += " " * (indent + 0) + ")"
+        return colors
 
 
 def _set_items(items_: list, menu_id: str) -> str:
@@ -149,24 +154,29 @@ def _set_items(items_: list, menu_id: str) -> str:
     items = " " * 0 + f"{menu_id}.append(\n" # adds 4 spaces later
 
     for item_ in items_:
-        item = " " * 4 + f"Item(\n"
-        item += " " * 8 + f"key = '{item_['key'][1:-1]}',\n"
-        item += " " * 8 + f"message = '{item_['message'][1:-1]}',\n"
+        if isinstance(item_, str):
+            # Add literal Item
+            item = " " * 4 + f"{item_},\n"
+        else:
+            # Construct Item from dict
+            item = " " * 4 + f"Item(\n"
+            item += " " * 8 + f"key = '{item_['key'][1:-1]}',\n"
+            item += " " * 8 + f"message = '{item_['message'][1:-1]}',\n"
 
-        if "Colors" in item_:
-            colors_str = _set_colors(item_["Colors"], "ItemColors", 8)
-            item += " " * 8 + f"colors = {colors_str},\n"
-        if "ExitColors" in item_:
-            colors_str = _set_colors(item_["ExitColors"], "ItemColors", 8)
-            item += " " * 8 + f"exit_colors = {colors_str},\n"
+            if "Colors" in item_:
+                colors_str = _set_colors(item_["Colors"], "ItemColors", 8)
+                item += " " * 8 + f"colors = {colors_str},\n"
+            if "ExitColors" in item_:
+                colors_str = _set_colors(item_["ExitColors"], "ItemColors", 8)
+                item += " " * 8 + f"exit_colors = {colors_str},\n"
 
-        item += " " * 8 + "funcs = [\n"
+            item += " " * 8 + "funcs = [\n"
 
-        for funcargs in item_["func"]:
-            func, args = parse_funcargs(funcargs)
-            item += " " * 12 + f"({func}, {args}),\n"
-        item += " " * 8 + "]\n"
-        item += " " * 4 + "),\n"
+            for funcargs in item_["func"]:
+                func, args = parse_funcargs(funcargs)
+                item += " " * 12 + f"({func}, {args}),\n"
+            item += " " * 8 + "]\n"
+            item += " " * 4 + "),\n"
 
         items += item
 

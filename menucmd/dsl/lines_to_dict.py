@@ -28,12 +28,15 @@ def lines_to_dict(lines: list[str]) -> dict:
                 "ExitColors": {...},
                 "Item": [
                     {"key": "e", "message": "Test", "func": ["func(args)", ...], "Colors": {...}},
-                    {"key": "b", "message": "Another", ...}
+                    {"key": "b", "message": "Another", ...},
+                    "Item(...)",
+                    ...
                 ]
             },
             {
                 "name": "Lazy Eval",
                 "id": "lazy_menu",
+                "colors": "MenuColors(...)",
                 ...
             }
         ]
@@ -128,7 +131,7 @@ def _parse_block(lines: list[str], start_idx: int, expected_indent: int, last_bl
             key, value = _parse_kv_line(stripped, last_block_name)
             
             # Add allowed duplicate KEYS here
-            if key in { "func" }:
+            if key in { "func", "Item" }:
                 if not key in block:
                     block[key] = []
                 block[key].append(value)
