@@ -168,13 +168,15 @@ Menu:
     Item:
         key: "$"
         message: "Settings"
+        Colors:
+            key: C.YELLOW + C.BOLD
         func: cfg.open_settings_menu(result.CONFIG, kwargs(name = "Settings"))
     Item:
         key: "#"
         message: "Show Command History"
         Colors:
             key: C.CYAN + C.BOLD
-        func: cfg.get_command_history(result.CONFIG, kwargs(colors=MenuColors(key=C.CYAN + C.BOLD)))
+        func: cfg.get_command_history(result.CONFIG)
         func: print(result.COMMAND)
     Item:
         key: "z"
@@ -186,6 +188,7 @@ Menu:
         key: "x"
         message: "Run Command"
         func: run_command()
-        func: cfg.add_to_history(result[0].CONFIG, result.COMMAND)
+        func: escape_on(result, None)
+        func: cfg.add_to_history(result.CONFIG[0], result.COMMAND)
         #func: print(result.COMMAND)
         func: cfg.save_config(result.CONFIG)

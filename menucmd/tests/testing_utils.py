@@ -1,5 +1,6 @@
 import random
 import os
+from menucmd import Colors as C
 from menucmd.cfgutil import *
 from macrolibs.filemacros import get_script_dir
 
@@ -17,10 +18,14 @@ cfg = MenuConfig(
     default_config = ConfigData(
         dirs = {
             "dirA": ("A", os.getcwd()),
-            "dirB": ("A", os.getcwd()),
+            "dirB": ("B", os.getcwd()),
         }
     ),
-    colors = ConfigColors(),
+    colors = ConfigColors(
+        settings_color = C.YELLOW + C.BOLD,
+        history_color = C.CYAN + C.BOLD,
+        message_color = C.GREEN,
+    ),
 )
 
 #==================================================================================

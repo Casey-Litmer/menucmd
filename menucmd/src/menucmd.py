@@ -52,6 +52,10 @@ class Menu:
         message = C.ITALIC,
     )
 
+    # Color Tracking
+    current_colors = colors
+    current_exit_colors = colors
+
     #==================================================================================
 
     def __init__(self,
@@ -146,6 +150,7 @@ class Menu:
         
         # Merge Colors (after arg_to for possible color updates)
         colors = Menu.colors.merge(self.colors)
+        self._update_current_colors(colors=colors, exit_colors=self.exit_colors)
 
         # List state logic
         if not self.menu_display_list[:-1]:
@@ -420,6 +425,17 @@ class Menu:
             else:
                 new += [x]
         return type(A)(new)
+    
+
+    def _update_current_colors(self, colors: MenuColors | None = None, exit_colors: ItemColors | None = None):
+        """
+        Updates current colors so a process running within a menu can know 
+        what colors are currently active without a reference to the menu
+        """
+        if colors:
+            Menu.current_colors = colors
+        if exit_colors:
+            Menu.current_exit_colors = exit_colors
 
     #==================================================================================
     # Errors

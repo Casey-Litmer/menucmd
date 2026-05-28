@@ -3,7 +3,7 @@ from macrolibs.filemacros import open_json, save_json
 from macrolibs.typemacros import list_union
 from typing import Callable
 from dataclasses import asdict
-from menucmd import Colors as C, Menu, Item, ItemColors
+from menucmd import Colors as C, Menu, Item, ItemColors, MenuColors
 from menucmd.builtins import choose_item, f_end
 from .dataclasses import *
 from .ansi_scheme import ConfigColors
@@ -24,7 +24,7 @@ class MenuConfig:
         self.colors = colors
 
     #==================================================================================
-    # Configs
+    # Config Load / Save
     #==================================================================================
 
     def get_config(self, callback = None):
@@ -44,7 +44,7 @@ class MenuConfig:
         """Saves config to json file."""
         json = asdict(callback(config) if callback is not None else config)
         save_json(json, self.config_path)
-    
+
     #==================================================================================
     # Settings
     #==================================================================================
@@ -56,11 +56,18 @@ class MenuConfig:
                       **kwargs
                       ):
         """"""
+        _colors = self._merge_colors()
+
         menu = Menu(
             name = name, 
             arg_to = self._show_settings(exclude_from_list),
             exit_to = f_end,
             end_to = Menu.exit_to,
+            colors = MenuColors(
+                key = _colors.settings_color,
+                message = _colors.message_color,
+                invalid_key = _colors.error_color
+            ),
             **kwargs,
         )
 
@@ -69,7 +76,6 @@ class MenuConfig:
                 Item(
                     key = "h", 
                     message = "Command History Length",
-                    colors = ItemColors(),
                     funcs = [
                         (self._change_history_length, (Menu.result.CONFIG)),
                         (self.save_config, (Menu.result.CONFIG)),
@@ -78,11 +84,12 @@ class MenuConfig:
             )
         
         if isinstance(config, DirectoryData):
+            from pprint import pprint
+            print(config.dirs)
             menu.append(*[
                 Item(
                     key = key, 
                     message = name,
-                    colors = ItemColors(),
                     funcs = [
                         (self.change_directory, (Menu.result.CONFIG, name)),
                         (self.save_config, (Menu.result.CONFIG)),
@@ -111,12 +118,42 @@ class MenuConfig:
         return wrapper
     
 
+    def settings_item(self, **kwargs):
+        """"""
+        item_colors = kwargs.pop("colors", ItemColors())
+
+        c_settings = self._merge_colors().settings_color
+
+        return Item(
+            key = "$", 
+            message = "Settings",
+            colors = item_colors.merge(ItemColors(
+                key = c_settings,
+            )),
+            funcs = [
+                (
+                    self.open_settings_menu, 
+                    (
+                        Menu.result, 
+                        Menu.kwargs(
+                            name = "Settings", 
+                            colors = MenuColors(
+                                key = c_settings
+                            )
+                        )
+                    )
+                ),
+            ],
+            **kwargs,
+        )
+    
+
     #==================================================================================
     # Command History
     #==================================================================================
 
     def add_to_history(self, config: CommandHistoryData, command, compare_as = None):
-        """"""
+        """Adds a command to the history."""
         # Add to history
         config.command_history.append(command)
 
@@ -132,33 +169,33 @@ class MenuConfig:
 
 
     def clear_command_history(self, config: CommandHistoryData):
-        """"""
+        """Clears command history in config."""
         config.command_history = []
 
 
     def get_command_history(self, config: CommandHistoryData, callback: Callable | None = None, **kwargs) -> str | object:
-        """"""
-        c_message = self._merge_colors().message_color   
+        """Returns a menu of command history to choose from. Returns Menu.escape on exit."""
+        _colors = self._merge_colors()   
         command_history = config.command_history
-        
-        display_as = callback if callback is not None \
-            else lambda x: f"{c_message}{x}{C.END}"
         
         # Choose command
         return choose_item(
             command_history, 
             exit_val = Menu.escape, 
-            display_as = display_as,
             empty_message= "Command history is empty.",
+            colors = MenuColors(
+                key = _colors.history_color,
+                message = _colors.message_color,
+                invalid_key = _colors.error_color
+            ),
             **kwargs,
         )
     
     def _change_history_length(self, config: CommandHistoryData):
-        """
-        """
-        merged_colors = self._merge_colors()
-        c_settings = merged_colors.settings_color
-        c_error = merged_colors.error_color
+        """Update config history length."""
+        _colors = self._merge_colors()
+        c_settings = _colors.settings_color
+        c_error = _colors.error_color
 
         while new_length := input(f"{c_settings}New Length:{C.END} "):
             if not new_length.strip():
@@ -169,22 +206,53 @@ class MenuConfig:
             config.history_length = int(new_length)
             break
 
+    
+    def command_history_item(self, **kwargs):
+        """"""
+        item_colors = kwargs.pop("colors", ItemColors())
+        
+        c_history = self._merge_colors().history_color
+
+        colors = item_colors.merge(ItemColors(
+            key = c_history,
+        ))
+
+        return Item(
+            key = "#",
+            message = "Show Command History",
+            colors = colors,
+            funcs = [
+                (
+                    self.get_command_history,
+                    (
+                        Menu.result, 
+                        Menu.kwargs(
+                            name = "Show Command History", 
+                            colors = colors,
+                            **kwargs,
+                        )
+                    )
+                ),
+            ],
+            **kwargs,
+        )
+
     #==================================================================================
     # Directories
     #==================================================================================
 
-    def change_directory(self, config: DirectoryData, key: str):
+    def change_directory(self, config: DirectoryData, name: str):
         """
         Update config paths.  
         Takes the config struct and stores the user input into the corresponding key.
         """
-        merged_colors = self._merge_colors()
-        c_settings = merged_colors.settings_color
-        c_message = merged_colors.message_color
+        _colors = self._merge_colors()
+        c_settings = _colors.settings_color
+        c_message = _colors.message_color
 
         # Get new dir
         print(f"{c_message}('cwd' for current directory){C.END}")
-        new_dir = input(f"{c_settings}{({'cwd':'Working Directory: ', 'outpath':'Output Directory: '})[key]}{C.END}").strip()
+        new_dir = input(f"{c_settings}New {config.dirs[name][0]}:{C.END} ").strip()
         
         # Return on empty
         if not new_dir:
@@ -194,18 +262,20 @@ class MenuConfig:
         new_dir = getcwd() if new_dir == "cwd" else new_dir
 
         # Update config
-        if key in config.dirs.keys():
-            config.dirs[key] = (config.dirs[key][0], new_dir)
+        if name in config.dirs.keys():
+            config.dirs[name] = (config.dirs[name][0], new_dir)
         else:
-            raise KeyError(f"{key} does not exist on {config}")
+            raise KeyError(f"{name} does not exist on {config}")
 
     #==================================================================================
     # Util
     #==================================================================================
     
     def _merge_colors(self):
+        """Merge config colors with current menu colors"""
         return ConfigColors(
-            message_color = self.colors.message_color if self.colors.message_color else Menu.colors.message,
-            settings_color = self.colors.settings_color if self.colors.settings_color else Menu.colors.key,
-            error_color = self.colors.error_color if self.colors.error_color else Menu.colors.invalid_key,
+            message_color = self.colors.message_color if self.colors.message_color else Menu.current_colors.message,
+            error_color = self.colors.error_color if self.colors.error_color else Menu.current_colors.invalid_key,
+            history_color = self.colors.history_color if self.colors.history_color else Menu.current_colors.key,
+            settings_color = self.colors.settings_color if self.colors.settings_color else Menu.current_colors.key,
         )
