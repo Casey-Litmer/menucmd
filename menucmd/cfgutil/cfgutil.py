@@ -165,7 +165,7 @@ class MenuConfig:
     def add_to_history(self, config: HistoryData, command, compare_as = None):
         """Adds a command to the history."""
         # Add to history
-        config.history.append(command)
+        config.history = [command, *config.history]
 
         # Automatic flattening comparison for commands as BaseData
         if not compare_as:
