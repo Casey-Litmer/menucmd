@@ -111,7 +111,6 @@ class MenuConfig:
                       message = "Settings", 
                       colors: ItemColors = ItemColors(),
                       menu_colors: MenuColors = MenuColors(),
-                      display_as = None,
                      ) -> Item:
         """Returns a menu item for accessing settings."""
 
@@ -132,7 +131,6 @@ class MenuConfig:
                         Menu.kwargs(
                             name = menu_name, 
                             colors = menu_colors,
-                            display_as = display_as,
                         )
                     )
                 ),
